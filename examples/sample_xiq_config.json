@@ -1,0 +1,130 @@
+{
+  "ssids": [
+    {
+      "name": "Corporate-WiFi",
+      "enabled": true,
+      "broadcast_ssid": true,
+      "vlan_id": 100,
+      "security": {
+        "type": "psk",
+        "encryption": "aes",
+        "psk": "SecurePassword123!",
+        "wpa_version": "WPA2",
+        "pmf": "optional"
+      },
+      "max_clients": 200,
+      "band_steering": true,
+      "fast_roaming": true,
+      "radio_profile": null,
+      "qos_profile": null,
+      "captive_portal": null
+    },
+    {
+      "name": "Guest-WiFi",
+      "enabled": true,
+      "broadcast_ssid": true,
+      "vlan_id": 200,
+      "security": {
+        "type": "open",
+        "encryption": "none"
+      },
+      "max_clients": 100,
+      "band_steering": false,
+      "fast_roaming": false,
+      "captive_portal": "GuestPortal"
+    },
+    {
+      "name": "Enterprise-Secure",
+      "enabled": true,
+      "broadcast_ssid": true,
+      "vlan_id": 100,
+      "security": {
+        "type": "dot1x",
+        "encryption": "aes",
+        "wpa_version": "WPA2",
+        "pmf": "required",
+        "radius_servers": [
+          {
+            "ip": "192.168.1.10",
+            "port": 1812,
+            "secret": "RadiusSecret123"
+          }
+        ]
+      },
+      "max_clients": 300,
+      "band_steering": true,
+      "fast_roaming": true
+    }
+  ],
+  "vlans": [
+    {
+      "vlan_id": 100,
+      "name": "Corporate",
+      "description": "Corporate network VLAN",
+      "subnet": "192.168.100.0/24",
+      "gateway": "192.168.100.1",
+      "dhcp_enabled": true
+    },
+    {
+      "vlan_id": 200,
+      "name": "Guest",
+      "description": "Guest network VLAN",
+      "subnet": "192.168.200.0/24",
+      "gateway": "192.168.200.1",
+      "dhcp_enabled": true
+    },
+    {
+      "vlan_id": 300,
+      "name": "IoT",
+      "description": "IoT devices VLAN",
+      "subnet": "192.168.300.0/24",
+      "gateway": "192.168.300.1",
+      "dhcp_enabled": false
+    }
+  ],
+  "radio_profiles": [
+    {
+      "name": "Standard-2.4GHz",
+      "band": "2.4GHz",
+      "channel": "auto",
+      "channel_width": "20MHz",
+      "tx_power": "auto",
+      "min_rssi": -75,
+      "max_clients": 50
+    },
+    {
+      "name": "Standard-5GHz",
+      "band": "5GHz",
+      "channel": "auto",
+      "channel_width": "40MHz",
+      "tx_power": "auto",
+      "min_rssi": -70,
+      "max_clients": 100
+    }
+  ],
+  "authentication": [
+    {
+      "name": "Primary-RADIUS",
+      "ip": "192.168.1.10",
+      "auth_port": 1812,
+      "acct_port": 1813,
+      "secret": "RadiusSecret123",
+      "timeout": 5,
+      "retries": 3,
+      "enabled": true
+    },
+    {
+      "name": "Secondary-RADIUS",
+      "ip": "192.168.1.11",
+      "auth_port": 1812,
+      "acct_port": 1813,
+      "secret": "RadiusSecret456",
+      "timeout": 5,
+      "retries": 3,
+      "enabled": true
+    }
+  ],
+  "qos_profiles": [],
+  "captive_portals": [],
+  "user_profiles": []
+}

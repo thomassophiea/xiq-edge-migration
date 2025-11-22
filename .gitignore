@@ -1,0 +1,55 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Backups
+*.backup
+*.bak
+
+# Logs
+*.log
+
+# Credentials (IMPORTANT - never commit passwords!)
+*password*
+*secret*
+credentials.json
+.env
+
+# Large external dependencies
+ExtremeCloudIQ-APIs/
+
+# Temporary files
+*.tmp
+temp/
+tmp/
+
+# Test outputs
+test_output/
+*.test
+
+# CSV exports
+*.csv
+exports/
+
+# Local settings
+.claude/settings.local.json
