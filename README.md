@@ -83,12 +83,17 @@ deactivate
 
 ### During Migration:
 1. Connects to XIQ and fetches configuration
-2. Shows SSIDs, VLANs, RADIUS servers found
+2. Shows SSIDs, VLANs, RADIUS servers, APs found
 3. Allows selection of objects to migrate
 4. Connects to Edge Services
 5. Fetches existing topologies (e.g., VLAN 1)
 6. Converts configuration
 7. Posts to Edge Services
+8. **Assigns SSIDs to Associated Profiles** (NEW!)
+   - Fetches available profiles
+   - Prompts for profile selection per SSID
+   - Asks which radios to use (2.4GHz, 5GHz, 6GHz)
+   - Applies assignments automatically
 
 ### Expected Output:
 ```
@@ -139,12 +144,16 @@ Details:
 1. **Login to Edge Services Web UI**
 2. **Navigate to Services**
 3. **Review migrated services** (they will be in "disabled" state)
-4. **Adjust settings as needed:**
+4. **Verify Profile Assignments:**
+   - Check Configuration → Profiles
+   - Confirm SSIDs are assigned to correct profiles
+   - Verify radio selections (2.4GHz, 5GHz, 6GHz)
+5. **Adjust settings as needed:**
    - Disable captive portal if not using
    - Change role assignments if needed
    - Update any service-specific settings
-5. **Enable services** one by one
-6. **Test connectivity** for each SSID
+6. **Enable services** one by one
+7. **Test connectivity** for each SSID
 
 ## File Structure
 
