@@ -58,6 +58,7 @@ deactivate
 - SSIDs fetch from `/ssids` endpoint
 - VLANs extract from user profiles
 - RADIUS servers from `/radius-servers/external`
+- Devices (APs) with names and locations
 - Proper pagination with `data` field
 - Security settings from `access_security` object
 
@@ -66,12 +67,17 @@ deactivate
 - Skips duplicate VLANs (no conflicts)
 - Uses existing topology IDs for services
 - Correct role ID: `4459ee6c-2f76-11e7-93ae-92361f002671`
-- Captive portal enabled for role requirement
+- Updates AP names and locations via PUT /v1/aps/{serial}
+- Posts Rate Limiters and CoS policies
 
 ✅ **Config Converter**
 - Maps VLAN IDs to existing topology UUIDs
 - Sets both authenticated and non-authenticated role IDs
 - Creates services in "disabled" state for review
+- Converts DNS servers and domains for VLANs
+- Converts AP configurations (name, location)
+- Converts Rate Limiters (bandwidth policies)
+- Converts Class of Service policies (QoS)
 
 ## What to Expect
 
@@ -90,25 +96,42 @@ deactivate
   - SSIDs: 20
   - VLANs: 5
   - RADIUS Servers: 3
+  - Devices (APs): 45
 
 ✓ Connected to Edge Services
 ✓ Found 4 existing topologies
 
 ✓ Conversion complete
+  - Rate Limiters: 3
+  - CoS Policies: 2
   - Services (SSIDs): 2
   - Topologies (VLANs): 2
+  - AAA Policies: 1
+  - AP Configurations: 45
 
 Posting configuration...
+  Posting Rate Limiter 'Guest-100Mbps' (100000 Kbps)...
+    Success
+  Posting CoS Policy 'Video-Priority'...
+    Success
   Posting Topology (VLAN) 2 - v2...
     Success
   Posting Topology (VLAN) 1 - 1...
     Skipped (VLAN 1 already exists)
+  Posting AAA Policy 'XIQ_RADIUS_Policy'...
+    Success
   Posting Service (SSID) 'Skynet'...
+    Success
+  Updating AP 02301A0B1234 - Name: 'Building-A-AP1', Location: 'Floor 1'...
     Success
 
 Details:
+  rate_limiters: 3/3 rate limiters posted successfully
+  cos_policies: 2/2 CoS policies posted successfully
   topologies: 1/2 topologies posted successfully (1 skipped - already exist)
+  aaa_policies: 1/1 AAA policies posted successfully
   services: 2/2 services posted successfully
+  ap_configs: 45/45 AP configurations updated successfully
 ```
 
 ## Post-Migration Steps
@@ -175,8 +198,10 @@ Then use the launcher script:
 - ✅ XIQ API (username/password login)
 - ✅ Edge Services v5.26 at tsophiea.ddns.net
 - ✅ 20 SSIDs with various security types (Open, PSK, PPSK, 802.1X, OWE)
-- ✅ 5 VLANs (IDs: 1, 2, 3, 10, 666)
+- ✅ 5 VLANs with DNS servers and DHCP settings
 - ✅ 3 RADIUS servers
+- ✅ 45 Access Points with names and locations
+- ✅ Rate Limiters and CoS policies
 
 ## Success Criteria
 

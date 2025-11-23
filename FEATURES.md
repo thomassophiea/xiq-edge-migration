@@ -183,6 +183,151 @@ python main.py \
 ✅ **Safe Testing** - Try migrating one SSID first before doing all
 ✅ **Clean Migration** - Only move what you actually need
 
+## 🌐 Network Configuration Features (NEW!)
+
+### DNS Servers in VLANs
+
+**Migrates DNS configuration from XIQ VLANs to Edge Services topologies**
+
+The tool now captures DNS settings from your XIQ VLANs and applies them to Edge Services:
+
+```
+VLAN Configuration from XIQ:
+  VLAN 100 - Corporate
+    Subnet: 192.168.100.0/24
+    DNS Servers: 10.10.10.10, 10.10.10.11
+    DNS Domain: corp.example.com
+```
+
+**Converted to Edge Services:**
+- `dhcpDnsServers`: "10.10.10.10,10.10.10.11" (comma-separated)
+- `dhcpDomain`: "corp.example.com"
+
+**Fallback:** If no DNS servers specified, defaults to Google DNS (8.8.8.8,8.8.4.4)
+
+### Access Point Names and Locations
+
+**Migrates AP device information from XIQ to Edge Services**
+
+The tool fetches all Access Points from XIQ and updates their configuration in Edge Services:
+
+```
+AP Migration Example:
+  Serial: 02301A0B1234
+  Name: Building-A-Floor-1-AP1
+  Location: Bldg A, Floor 1, Room 101
+  Model: AP410C
+```
+
+**Edge Services Update:**
+- Uses `PUT /v1/aps/{serial}` endpoint
+- Updates `apName` field
+- Updates `location` field (truncated to 32 chars if needed)
+
+**Benefits:**
+- Maintains consistent AP naming across platforms
+- Preserves physical location information
+- Simplifies AP identification and management
+
+### Rate Limiters (Bandwidth Policies)
+
+**Migrates bandwidth limitation policies from XIQ**
+
+Rate limiters control the maximum bandwidth available to clients:
+
+```
+Rate Limiter Example:
+  Name: Guest-100Mbps
+  Bandwidth: 100 Mbps → Converted to 100000 Kbps
+```
+
+**Edge Services Schema:**
+```json
+{
+  "id": "uuid",
+  "name": "Guest-100Mbps",
+  "cirKbps": 100000,
+  "features": ["CENTRALIZED-SITE"]
+}
+```
+
+**Supports:**
+- Bandwidth in Kbps or Mbps (auto-converts)
+- CIR (Committed Information Rate)
+- Multiple rate limiter policies
+
+**Posted to:** `/v1/ratelimiters`
+
+### Class of Service (CoS) Policies
+
+**Migrates QoS policies with rate limiter references**
+
+CoS policies define traffic prioritization and bandwidth control:
+
+```
+CoS Policy Example:
+  Name: Video-Priority
+  DSCP: 46 (EF - Expedited Forwarding)
+  802.1p: 5 (Video)
+  Ingress Rate Limiter: Guest-100Mbps
+  Egress Rate Limiter: Guest-100Mbps
+```
+
+**Edge Services Schema:**
+```json
+{
+  "id": "uuid",
+  "name": "Video-Priority",
+  "dscp": 46,
+  "dot1p": 5,
+  "ingressRateLimiterId": "rate-limiter-uuid",
+  "egressRateLimiterId": "rate-limiter-uuid",
+  "features": ["CENTRALIZED-SITE"]
+}
+```
+
+**Supports:**
+- DSCP marking (0-63)
+- 802.1p priority (0-7)
+- Ingress/egress rate limiter references
+- Traffic classification and prioritization
+
+**Dependency:** Rate limiters must be posted first
+
+**Posted to:** `/v1/policyClassOfService`
+
+## 📊 Migration Coverage
+
+### Before Quick Wins Implementation
+- SSIDs (Wireless Networks)
+- VLANs (Network Segmentation)
+- RADIUS Servers (Authentication)
+
+**Coverage: ~30%** of typical XIQ configuration
+
+### After Quick Wins Implementation
+- SSIDs (Wireless Networks)
+- VLANs with DNS settings
+- RADIUS Servers (Authentication)
+- **AP Names and Locations** ⭐
+- **Rate Limiters** ⭐
+- **Class of Service** ⭐
+
+**Coverage: ~55%** of typical XIQ configuration
+
+### Migration Dependency Order
+
+The tool posts objects in the correct dependency order:
+
+```
+1. Rate Limiters (no dependencies)
+2. Class of Service (depends on Rate Limiters)
+3. Topologies/VLANs (no dependencies)
+4. AAA Policies (no dependencies)
+5. Services/SSIDs (depends on Topologies, AAA)
+6. AP Configurations (no dependencies, updates existing APs)
+```
+
 ## Full Feature List
 
 ### XIQ Integration
@@ -190,13 +335,17 @@ python main.py \
 - ✅ API token authentication
 - ✅ Multi-region support (Global, EU, APAC, California)
 - ✅ Pulls SSIDs, VLANs, RADIUS servers, radio profiles
+- ✅ Pulls devices (Access Points) with names and locations
 - ✅ **Interactive object selection**
 
 ### Edge Services Integration
 - ✅ OAuth 2.0 authentication
 - ✅ Posts Services (SSIDs)
-- ✅ Posts Topologies (VLANs)
+- ✅ Posts Topologies (VLANs) with DNS settings
 - ✅ Posts AAA Policies (RADIUS)
+- ✅ Posts Rate Limiters (bandwidth policies)
+- ✅ Posts Class of Service (CoS) policies
+- ✅ Updates AP configurations (names and locations)
 - ✅ Proper v5.26 API schemas
 
 ### Security Support
@@ -204,6 +353,13 @@ python main.py \
 - ✅ WPA-PSK (WPA2/WPA3)
 - ✅ WPA-Enterprise (802.1X)
 - ✅ PMF (Protected Management Frames)
+
+### Network Configuration
+- ✅ **DNS Servers** - Per-VLAN DNS configuration
+- ✅ **DNS Domain** - DHCP domain settings
+- ✅ **AP Names & Locations** - Migrates device metadata
+- ✅ **Rate Limiters** - Bandwidth policies in Kbps
+- ✅ **Class of Service** - QoS with DSCP and 802.1p marking
 
 ### Modes
 - ✅ **Interactive mode** - Prompts for everything
