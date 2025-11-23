@@ -5,6 +5,49 @@ All notable changes to the XIQ to Edge Services Migration Tool will be documente
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2025-01-23
+
+### Added - Associated Profile Assignment
+
+#### Automated SSID-to-Profile Association
+- **Interactive profile selection** for each SSID during migration
+- Fetches all Associated Profiles from Edge Services (`/v3/profiles`)
+- Sorts profiles with custom profiles first, default profiles last
+- For each SSID, prompts:
+  - Which profiles to associate with (numbers, 'all', 'custom', 'none')
+  - Which radios to use (0=all radios, 1=2.4GHz, 2=5GHz, 3=6GHz)
+- Applies assignments automatically via `PUT /v3/profiles/{id}`
+
+#### New Methods
+- `get_profiles()` in Edge Services client - Fetches Associated Profiles
+- `update_profile_ssid_assignments()` - Updates profile with SSID assignments
+- `sort_profiles()` - Sorts custom profiles first, then defaults
+- `select_profile_assignments()` - Interactive profile selection UI
+
+#### Features
+- **Profile Sorting:** Custom (non-default) profiles shown first
+- **Radio Selection:** Per-profile radio targeting (all, 2.4GHz, 5GHz, 6GHz)
+- **Bulk Options:** 'all' applies to all profiles, 'custom' for custom only
+- **Skip Option:** 'none' skips profile assignment for manual setup later
+- **Duplicate Prevention:** Merges with existing assignments
+- **--select-all Support:** Applies all SSIDs to all profiles on all radios
+
+#### Documentation
+- Created `PROFILE_ASSIGNMENT_GUIDE.md` with comprehensive documentation
+- Updated README.md with profile assignment workflow
+- Includes troubleshooting, best practices, and examples
+
+### Changed
+- Migration workflow now includes STEP 4: Associate SSIDs with Profiles
+- Profile assignment happens automatically after services are posted
+- Assignment summary shows all SSID-to-profile mappings
+
+### Technical Details
+- Uses Edge Services v3 API for profiles
+- InterfaceAssignmentElement schema: `{serviceId, index}`
+- Radio index mapping: 0=all, 1=radio1, 2=radio2, 3=radio3
+- Returns JSON format: `{service_id: [{profile_id, profile_name, radio_index}]}`
+
 ## [1.2.0] - 2025-01-22
 
 ### Added - Quick Wins Phase 1
