@@ -500,6 +500,11 @@ Examples:
             print("Retrieving configuration from XIQ...")
             xiq_config = xiq_client.get_configuration()
 
+            # Fetch devices (APs) to get names and locations
+            print("Retrieving device information...")
+            devices = xiq_client.get_devices()
+            xiq_config['devices'] = devices
+
         elif xiq_creds['type'] == 'token':
             # Use API token
             print(f"\nConnecting to Extreme Cloud IQ API...")
@@ -519,12 +524,18 @@ Examples:
             print("Retrieving configuration from XIQ...")
             xiq_config = xiq_client.get_configuration()
 
+            # Fetch devices (APs) to get names and locations
+            print("Retrieving device information...")
+            devices = xiq_client.get_devices()
+            xiq_config['devices'] = devices
+
         # Show what was extracted
         print("\n✓ Configuration retrieved from XIQ")
         print(f"  - SSIDs: {len(xiq_config.get('ssids', []))}")
         print(f"  - VLANs: {len(xiq_config.get('vlans', []))}")
         print(f"  - Radio Profiles: {len(xiq_config.get('radio_profiles', []))}")
         print(f"  - RADIUS Servers: {len(xiq_config.get('authentication', []))}")
+        print(f"  - Devices (APs): {len(xiq_config.get('devices', []))}")
 
         # Show SSID details if verbose
         if args.verbose and xiq_config.get('ssids'):
@@ -606,9 +617,12 @@ Examples:
         campus_config = converter.convert(xiq_config, existing_topologies)
 
         print(f"\n✓ Conversion complete")
+        print(f"  - Rate Limiters: {len(campus_config.get('rate_limiters', []))}")
+        print(f"  - CoS Policies: {len(campus_config.get('cos_policies', []))}")
         print(f"  - Services (SSIDs): {len(campus_config.get('services', []))}")
         print(f"  - Topologies (VLANs): {len(campus_config.get('topologies', []))}")
         print(f"  - AAA Policies: {len(campus_config.get('aaa_policies', []))}")
+        print(f"  - AP Configurations: {len(campus_config.get('ap_configs', []))}")
 
         # Save to file if requested
         if args.output:
@@ -624,9 +638,12 @@ Examples:
             print("STEP 3: Post Configuration to Edge Services")
             print("-" * 70)
             print(f"\nReady to post configuration to: {cc_info['url']}")
+            print(f"  - {len(campus_config.get('rate_limiters', []))} Rate Limiters")
+            print(f"  - {len(campus_config.get('cos_policies', []))} CoS Policies")
             print(f"  - {len(campus_config.get('services', []))} Services (SSIDs)")
             print(f"  - {len(campus_config.get('topologies', []))} Topologies (VLANs)")
             print(f"  - {len(campus_config.get('aaa_policies', []))} AAA Policies")
+            print(f"  - {len(campus_config.get('ap_configs', []))} AP Configurations")
 
             if interactive_mode and not confirm_action("\nProceed with posting to Edge Services?"):
                 print("\nCancelled by user. Configuration was not posted.")

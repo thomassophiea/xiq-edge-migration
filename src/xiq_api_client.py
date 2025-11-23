@@ -423,6 +423,45 @@ class XIQAPIClient:
                 print("    ⚠ No RADIUS servers found")
             return []
 
+    def get_devices(self) -> List[Dict[str, Any]]:
+        """
+        Get all devices (APs) from XIQ
+
+        Returns:
+            List of device configurations with names and locations
+        """
+        if self.verbose:
+            print("  Fetching devices...")
+
+        devices = self._make_request_with_pagination("/devices")
+
+        if devices:
+            # Filter for Access Points only
+            aps = [d for d in devices if d.get('device_function') == 'AP' or d.get('product_type', '').startswith('AP')]
+
+            if self.verbose:
+                print(f"    ✓ Retrieved {len(aps)} Access Points (out of {len(devices)} total devices)")
+
+            # Normalize device data
+            normalized_devices = []
+            for device in aps:
+                normalized_devices.append({
+                    'serial_number': device.get('serial_number'),
+                    'name': device.get('hostname', device.get('device_name', device.get('serial_number'))),
+                    'location': device.get('location', ''),
+                    'model': device.get('product_type', device.get('model', '')),
+                    'mac_address': device.get('mac_address', device.get('mac', '')),
+                    'connected': device.get('connected', False),
+                    'ip_address': device.get('ip_address', ''),
+                    'original': device
+                })
+
+            return normalized_devices
+        else:
+            if self.verbose:
+                print("    ⚠ No devices found")
+            return []
+
     def get_user_profiles(self) -> List[Dict[str, Any]]:
         """Get user profiles from XIQ"""
         if self.verbose:

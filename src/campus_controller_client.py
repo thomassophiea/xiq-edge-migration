@@ -102,20 +102,35 @@ class CampusControllerClient:
 
         # Post different configuration components in dependency order
         try:
-            # 1. Post Topologies (VLANs) first - these are dependencies
+            # 1. Post Rate Limiters first - dependency for CoS and Services
+            if config.get('rate_limiters'):
+                rate_limiter_result = self._post_rate_limiters(config['rate_limiters'])
+                results['details']['rate_limiters'] = rate_limiter_result
+
+            # 2. Post Class of Service policies - depends on rate limiters
+            if config.get('cos_policies'):
+                cos_result = self._post_cos_policies(config['cos_policies'])
+                results['details']['cos_policies'] = cos_result
+
+            # 3. Post Topologies (VLANs) - dependencies for services
             if config.get('topologies'):
                 topology_result = self._post_topologies(config['topologies'])
                 results['details']['topologies'] = topology_result
 
-            # 2. Post AAA Policies (RADIUS servers)
+            # 4. Post AAA Policies (RADIUS servers)
             if config.get('aaa_policies'):
                 aaa_result = self._post_aaa_policies(config['aaa_policies'])
                 results['details']['aaa_policies'] = aaa_result
 
-            # 3. Post Services (SSIDs) - depend on topologies and AAA policies
+            # 5. Post Services (SSIDs) - depend on topologies and AAA policies
             if config.get('services'):
                 service_result = self._post_services(config['services'])
                 results['details']['services'] = service_result
+
+            # 6. Update AP configurations (names and locations)
+            if config.get('ap_configs'):
+                ap_result = self._update_ap_configs(config['ap_configs'])
+                results['details']['ap_configs'] = ap_result
 
         except Exception as e:
             results['success'] = False
@@ -136,6 +151,76 @@ class CampusControllerClient:
             if self.verbose:
                 print(f"  Warning: Could not fetch existing topologies: {e}")
         return []
+
+    def _post_rate_limiters(self, rate_limiters: List[Dict[str, Any]]) -> str:
+        """
+        Post Rate Limiters to Edge Services
+
+        Args:
+            rate_limiters: List of rate limiter configurations
+
+        Returns:
+            Result summary string
+        """
+        url = f'{self.base_url}/v1/ratelimiters'
+        success_count = 0
+
+        for limiter in rate_limiters:
+            try:
+                if self.verbose:
+                    print(f"  Posting Rate Limiter '{limiter.get('name')}' ({limiter.get('cirKbps')} Kbps)...")
+
+                response = self.session.post(url, json=limiter, timeout=30)
+
+                if response.status_code in [200, 201]:
+                    success_count += 1
+                    if self.verbose:
+                        print(f"    Success")
+                else:
+                    error_msg = response.text
+                    if self.verbose:
+                        print(f"    Warning: Failed ({response.status_code}): {error_msg}")
+
+            except Exception as e:
+                if self.verbose:
+                    print(f"    Error: {str(e)}")
+
+        return f"{success_count}/{len(rate_limiters)} rate limiters posted successfully"
+
+    def _post_cos_policies(self, cos_policies: List[Dict[str, Any]]) -> str:
+        """
+        Post Class of Service policies to Edge Services
+
+        Args:
+            cos_policies: List of CoS policy configurations
+
+        Returns:
+            Result summary string
+        """
+        url = f'{self.base_url}/v1/policyClassOfService'
+        success_count = 0
+
+        for policy in cos_policies:
+            try:
+                if self.verbose:
+                    print(f"  Posting CoS Policy '{policy.get('name')}'...")
+
+                response = self.session.post(url, json=policy, timeout=30)
+
+                if response.status_code in [200, 201]:
+                    success_count += 1
+                    if self.verbose:
+                        print(f"    Success")
+                else:
+                    error_msg = response.text
+                    if self.verbose:
+                        print(f"    Warning: Failed ({response.status_code}): {error_msg}")
+
+            except Exception as e:
+                if self.verbose:
+                    print(f"    Error: {str(e)}")
+
+        return f"{success_count}/{len(cos_policies)} CoS policies posted successfully"
 
     def _post_topologies(self, topologies: List[Dict[str, Any]]) -> str:
         """
@@ -265,6 +350,61 @@ class CampusControllerClient:
                     print(f"    Error: {str(e)}")
 
         return f"{success_count}/{len(policies)} AAA policies posted successfully"
+
+    def _update_ap_configs(self, ap_configs: List[Dict[str, Any]]) -> str:
+        """
+        Update AP configurations (names and locations) in Edge Services
+
+        Args:
+            ap_configs: List of AP configuration updates
+
+        Returns:
+            Result summary string
+        """
+        success_count = 0
+        skipped_count = 0
+
+        for ap_config in ap_configs:
+            try:
+                serial = ap_config.get('serial')
+                name = ap_config.get('name')
+                location = ap_config.get('location', '')
+
+                if not serial:
+                    skipped_count += 1
+                    continue
+
+                if self.verbose:
+                    print(f"  Updating AP {serial} - Name: '{name}', Location: '{location}'...")
+
+                # Use PUT method to update AP configuration
+                url = f'{self.base_url}/v1/aps/{serial}'
+
+                # Build the update payload - only include name and location
+                update_payload = {
+                    'apName': name,
+                    'location': location
+                }
+
+                response = self.session.put(url, json=update_payload, timeout=30)
+
+                if response.status_code in [200, 204]:
+                    success_count += 1
+                    if self.verbose:
+                        print(f"    Success")
+                else:
+                    error_msg = response.text
+                    if self.verbose:
+                        print(f"    Warning: Failed ({response.status_code}): {error_msg}")
+
+            except Exception as e:
+                if self.verbose:
+                    print(f"    Error: {str(e)}")
+
+        result = f"{success_count}/{len(ap_configs)} AP configurations updated successfully"
+        if skipped_count > 0:
+            result += f" ({skipped_count} skipped - no serial number)"
+        return result
 
     def get_existing_topologies(self) -> List[Dict[str, Any]]:
         """

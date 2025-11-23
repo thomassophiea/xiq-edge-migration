@@ -27,7 +27,13 @@ class ConfigConverter:
         Returns:
             Dictionary in Edge Services format with services, topologies, and aaa_policies
         """
-        # Convert VLANs to Topologies first (dependencies)
+        # Convert Rate Limiters first (dependency for CoS and Services)
+        rate_limiters = self._convert_to_rate_limiters(xiq_config.get('rate_limiters', []))
+
+        # Convert Class of Service policies (depends on rate limiters)
+        cos_policies = self._convert_to_cos_policies(xiq_config.get('cos_policies', []), rate_limiters)
+
+        # Convert VLANs to Topologies
         topologies = self._convert_to_topologies(xiq_config.get('vlans', []))
 
         # Convert authentication servers to AAA policies
@@ -40,10 +46,16 @@ class ConfigConverter:
             existing_topologies
         )
 
+        # Convert AP devices (names and locations)
+        ap_configs = self._convert_ap_configs(xiq_config.get('devices', []))
+
         campus_config = {
             'services': services,
             'topologies': topologies,
-            'aaa_policies': aaa_policies
+            'aaa_policies': aaa_policies,
+            'ap_configs': ap_configs,
+            'rate_limiters': rate_limiters,
+            'cos_policies': cos_policies
         }
 
         return campus_config
@@ -83,6 +95,16 @@ class ConfigConverter:
             if vlan.get('gateway'):
                 gateway = vlan.get('gateway')
 
+            # Format DNS servers (comma-separated string)
+            dns_servers = vlan.get('dns_servers', vlan.get('name_servers', []))
+            if isinstance(dns_servers, list):
+                dns_servers_str = ','.join(dns_servers) if dns_servers else "8.8.8.8,8.8.4.4"
+            else:
+                dns_servers_str = str(dns_servers) if dns_servers else "8.8.8.8,8.8.4.4"
+
+            # Get DNS domain
+            dns_domain = vlan.get('dns_domain', vlan.get('domain', ''))
+
             topology = {
                 "id": topology_id,
                 "name": vlan.get('name', f"VLAN_{vlan_id}"),
@@ -103,10 +125,10 @@ class ConfigConverter:
                 "dhcpStartIpRange": "0.0.0.0",
                 "dhcpEndIpRange": "0.0.0.0",
                 "dhcpMode": "DHCPRelay" if vlan.get('dhcp_enabled') else "DHCPNone",
-                "dhcpDomain": "",
+                "dhcpDomain": dns_domain,
                 "dhcpDefaultLease": 36000,
                 "dhcpMaxLease": 2592000,
-                "dhcpDnsServers": "",
+                "dhcpDnsServers": dns_servers_str,
                 "wins": "",
                 "portName": f"vlan{vlan_id}",
                 "vlanMapToEsa": -1,
@@ -370,3 +392,136 @@ class ConfigConverter:
             aaa_policies.append(aaa_policy)
 
         return aaa_policies
+
+    def _convert_ap_configs(self, devices: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """
+        Convert XIQ device information to Edge Services AP configurations
+
+        Args:
+            devices: List of device (AP) configurations from XIQ
+
+        Returns:
+            List of AP configuration updates for Edge Services
+        """
+        ap_configs = []
+
+        for device in devices:
+            serial = device.get('serial_number')
+            name = device.get('name')
+            location = device.get('location', '')
+
+            if not serial:
+                continue
+
+            # Truncate location to 32 characters (Edge Services API limit)
+            if location and len(location) > 32:
+                location = location[:32]
+
+            # Build AP configuration update
+            # Only include fields we want to update
+            ap_config = {
+                'serial': serial,
+                'name': name if name else serial,
+                'location': location
+            }
+
+            ap_configs.append(ap_config)
+
+        return ap_configs
+
+    def _convert_to_rate_limiters(self, rate_limiters: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """
+        Convert XIQ rate limiters/bandwidth profiles to Edge Services Rate Limiters
+
+        Args:
+            rate_limiters: List of rate limiter/QoS configurations from XIQ
+
+        Returns:
+            List of Rate Limiter configurations for Edge Services
+        """
+        edge_rate_limiters = []
+
+        for limiter in rate_limiters:
+            limiter_id = str(uuid.uuid4())
+            name = limiter.get('name', f'RateLimiter-{len(edge_rate_limiters) + 1}')
+
+            # Get bandwidth in Kbps - XIQ might use different field names
+            # Try common field names: rate, bandwidth, cir, max_bandwidth
+            bandwidth_kbps = limiter.get('bandwidth', limiter.get('rate', limiter.get('cir', 0)))
+
+            # Convert from Mbps to Kbps if needed
+            if limiter.get('unit', '').lower() == 'mbps':
+                bandwidth_kbps = bandwidth_kbps * 1000
+
+            # Ensure integer
+            bandwidth_kbps = int(bandwidth_kbps)
+
+            if bandwidth_kbps <= 0:
+                # Skip invalid rate limiters
+                continue
+
+            rate_limiter = {
+                "id": limiter_id,
+                "name": name,
+                "cirKbps": bandwidth_kbps,
+                "features": ["CENTRALIZED-SITE"]
+            }
+
+            edge_rate_limiters.append(rate_limiter)
+
+        return edge_rate_limiters
+
+    def _convert_to_cos_policies(self, cos_policies: List[Dict[str, Any]], rate_limiters: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """
+        Convert XIQ Class of Service policies to Edge Services CoS policies
+
+        Args:
+            cos_policies: List of CoS/QoS configurations from XIQ
+            rate_limiters: List of converted rate limiters for ID mapping
+
+        Returns:
+            List of CoS policy configurations for Edge Services
+        """
+        edge_cos_policies = []
+
+        # Build rate limiter name to ID mapping
+        rate_limiter_map = {rl.get('name'): rl.get('id') for rl in rate_limiters}
+
+        for policy in cos_policies:
+            policy_id = str(uuid.uuid4())
+            name = policy.get('name', f'CoS-{len(edge_cos_policies) + 1}')
+
+            # Get rate limiter references by name
+            ingress_limiter_name = policy.get('ingress_rate_limiter', policy.get('upload_limiter'))
+            egress_limiter_name = policy.get('egress_rate_limiter', policy.get('download_limiter'))
+
+            ingress_limiter_id = rate_limiter_map.get(ingress_limiter_name) if ingress_limiter_name else None
+            egress_limiter_id = rate_limiter_map.get(egress_limiter_name) if egress_limiter_name else None
+
+            # Get DSCP and 802.1p values
+            dscp = policy.get('dscp', 0)
+            dot1p = policy.get('dot1p', policy.get('priority', 0))
+
+            # Validate values
+            if not isinstance(dscp, int) or dscp < 0 or dscp > 63:
+                dscp = 0
+            if not isinstance(dot1p, int) or dot1p < 0 or dot1p > 7:
+                dot1p = 0
+
+            cos_policy = {
+                "id": policy_id,
+                "name": name,
+                "dscp": dscp,
+                "dot1p": dot1p,
+                "features": ["CENTRALIZED-SITE"]
+            }
+
+            # Add rate limiter IDs if available
+            if ingress_limiter_id:
+                cos_policy["ingressRateLimiterId"] = ingress_limiter_id
+            if egress_limiter_id:
+                cos_policy["egressRateLimiterId"] = egress_limiter_id
+
+            edge_cos_policies.append(cos_policy)
+
+        return edge_cos_policies
