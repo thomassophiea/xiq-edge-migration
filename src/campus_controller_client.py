@@ -466,3 +466,86 @@ class CampusControllerClient:
             return response.status_code in [200, 401]  # 401 means connected but auth expired
         except Exception:
             return False
+
+    def get_profiles(self) -> List[Dict[str, Any]]:
+        """
+        Get all Associated Profiles from Edge Services
+
+        Profiles determine which SSIDs are broadcast on which APs/radios.
+        Format is typically: AP3000/default, AP3000/customProfile, etc.
+
+        Returns:
+            List of profile configurations with radio and SSID assignments
+        """
+        try:
+            url = f'{self.base_url}/v3/profiles'
+            response = self.session.get(url, timeout=30)
+
+            if response.status_code == 200:
+                profiles = response.json()
+                if self.verbose:
+                    print(f"  Retrieved {len(profiles)} Associated Profiles")
+                return profiles if isinstance(profiles, list) else []
+            else:
+                if self.verbose:
+                    print(f"Failed to retrieve profiles: {response.status_code}")
+                return []
+
+        except Exception as e:
+            if self.verbose:
+                print(f"Error retrieving profiles: {str(e)}")
+            return []
+
+    def update_profile_ssid_assignments(self, profile_id: str, ssid_assignments: List[Dict[str, Any]]) -> bool:
+        """
+        Update a profile's SSID assignments (add SSIDs to radios)
+
+        Args:
+            profile_id: UUID of the profile to update
+            ssid_assignments: List of assignments with serviceId and radio index
+                             Example: [{"serviceId": "uuid", "index": 0}]
+                             index: 0=all radios, 1=radio1, 2=radio2, 3=radio3
+
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            # First, get the current profile to merge with existing assignments
+            url = f'{self.base_url}/v3/profiles/{profile_id}'
+            response = self.session.get(url, timeout=30)
+
+            if response.status_code != 200:
+                if self.verbose:
+                    print(f"    Error: Could not fetch profile {profile_id}")
+                return False
+
+            profile = response.json()
+
+            # Get existing radio assignments
+            existing_radios = profile.get('radioIfList', [])
+
+            # Merge new assignments (avoid duplicates)
+            existing_service_ids = {r.get('serviceId') for r in existing_radios if r.get('serviceId')}
+
+            for assignment in ssid_assignments:
+                if assignment.get('serviceId') not in existing_service_ids:
+                    existing_radios.append(assignment)
+
+            # Update the profile
+            profile['radioIfList'] = existing_radios
+
+            response = self.session.put(url, json=profile, timeout=30)
+
+            if response.status_code in [200, 204]:
+                if self.verbose:
+                    print(f"    ✓ Updated profile with {len(ssid_assignments)} SSID assignment(s)")
+                return True
+            else:
+                if self.verbose:
+                    print(f"    Error: Failed to update profile ({response.status_code}): {response.text}")
+                return False
+
+        except Exception as e:
+            if self.verbose:
+                print(f"    Error updating profile: {str(e)}")
+            return False

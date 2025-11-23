@@ -167,6 +167,196 @@ def confirm_action(message):
     return response in ['y', 'yes']
 
 
+def sort_profiles(profiles):
+    """
+    Sort profiles so non-default (custom) profiles appear first
+
+    Args:
+        profiles: List of profile dictionaries
+
+    Returns:
+        Sorted list with custom profiles first, then default profiles
+    """
+    custom_profiles = []
+    default_profiles = []
+
+    for profile in profiles:
+        name = profile.get('name', '')
+        # Profiles with /default in the name are default profiles
+        if '/default' in name.lower() or name.lower().endswith('default'):
+            default_profiles.append(profile)
+        else:
+            custom_profiles.append(profile)
+
+    # Sort each group alphabetically
+    custom_profiles.sort(key=lambda p: p.get('name', ''))
+    default_profiles.sort(key=lambda p: p.get('name', ''))
+
+    return custom_profiles + default_profiles
+
+
+def select_profile_assignments(services, profiles, assume_yes=False):
+    """
+    Interactive selection of Associated Profiles for each SSID
+
+    Args:
+        services: List of SSID/service configurations
+        profiles: List of available Associated Profiles from Edge Services
+        assume_yes: If True, apply all SSIDs to all profiles on all radios
+
+    Returns:
+        Dictionary mapping service IDs to profile assignments
+        Format: {service_id: [{profile_id, profile_name, radio_index}]}
+    """
+    if not profiles:
+        print("\n⚠ No Associated Profiles found in Edge Services")
+        print("  SSIDs will be created but not assigned to any profiles.")
+        print("  You'll need to manually assign them in the Edge Services UI.")
+        return {}
+
+    # Sort profiles: custom first, then defaults
+    sorted_profiles = sort_profiles(profiles)
+
+    assignments = {}
+
+    print("\n" + "=" * 70)
+    print("ASSOCIATE SSIDs WITH PROFILES")
+    print("=" * 70)
+    print("\nAvailable Associated Profiles:")
+    print("-" * 70)
+
+    # Show custom profiles first
+    custom_count = len([p for p in sorted_profiles if '/default' not in p.get('name', '').lower()])
+
+    for idx, profile in enumerate(sorted_profiles, 1):
+        profile_name = profile.get('name', 'Unknown')
+        platform = profile.get('apPlatform', '')
+        marker = "  [CUSTOM]" if idx <= custom_count else "  [DEFAULT]"
+        print(f"  {idx}. {profile_name:<40} ({platform}){marker}")
+
+    if assume_yes:
+        # Apply all SSIDs to all profiles on all radios
+        print("\n✓ --select-all mode: Applying all SSIDs to all profiles on all radios")
+        for service in services:
+            service_id = service.get('id')
+            service_name = service.get('serviceName', 'Unknown')
+            assignments[service_id] = []
+
+            for profile in sorted_profiles:
+                assignments[service_id].append({
+                    'profile_id': profile.get('id'),
+                    'profile_name': profile.get('name'),
+                    'radio_index': 0  # 0 = all radios
+                })
+        return assignments
+
+    # Interactive mode - ask for each SSID
+    for service in services:
+        service_id = service.get('id')
+        service_name = service.get('serviceName', 'Unknown')
+
+        print("\n" + "-" * 70)
+        print(f"SSID: {service_name}")
+        print("-" * 70)
+
+        print(f"\nWould you like to associate '{service_name}' with any Associated Profiles?")
+        print("  Options:")
+        print("    • Enter numbers (e.g., 1,2,3) to select specific profiles")
+        print("    • Enter 'all' to apply to all profiles")
+        print("    • Enter 'custom' to apply to all custom profiles only")
+        print("    • Enter 'none' to skip (manually assign later)")
+
+        selection = input("\nYour selection: ").strip().lower()
+
+        if selection == 'none':
+            print(f"✓ Skipped - '{service_name}' will not be assigned to any profiles")
+            continue
+
+        selected_profiles = []
+
+        if selection == 'all':
+            selected_profiles = sorted_profiles
+            print(f"✓ Selected all {len(sorted_profiles)} profiles")
+        elif selection == 'custom':
+            selected_profiles = [p for p in sorted_profiles if '/default' not in p.get('name', '').lower()]
+            print(f"✓ Selected {len(selected_profiles)} custom profiles")
+        else:
+            try:
+                indices = [int(x.strip()) - 1 for x in selection.split(',')]
+                selected_profiles = [sorted_profiles[i] for i in indices if 0 <= i < len(sorted_profiles)]
+                print(f"✓ Selected {len(selected_profiles)} profile(s)")
+            except (ValueError, IndexError):
+                print("⚠ Invalid selection - skipping this SSID")
+                continue
+
+        # For each selected profile, ask about radio selection
+        profile_assignments = []
+
+        for profile in selected_profiles:
+            profile_name = profile.get('name', '')
+            print(f"\n  Profile: {profile_name}")
+            print("  Which radios should broadcast this SSID?")
+            print("    0. All radios (default)")
+            print("    1. Radio 1 only (typically 2.4 GHz)")
+            print("    2. Radio 2 only (typically 5 GHz)")
+            print("    3. Radio 3 only (typically 6 GHz)")
+
+            radio_choice = input("  Enter radio index [0]: ").strip() or "0"
+
+            try:
+                radio_index = int(radio_choice)
+                if radio_index < 0 or radio_index > 3:
+                    radio_index = 0
+                    print("  ⚠ Invalid radio index, using 0 (all radios)")
+            except ValueError:
+                radio_index = 0
+                print("  ⚠ Invalid input, using 0 (all radios)")
+
+            profile_assignments.append({
+                'profile_id': profile.get('id'),
+                'profile_name': profile_name,
+                'radio_index': radio_index
+            })
+
+            radio_desc = {
+                0: "all radios",
+                1: "radio 1 (2.4 GHz)",
+                2: "radio 2 (5 GHz)",
+                3: "radio 3 (6 GHz)"
+            }.get(radio_index, f"radio {radio_index}")
+
+            print(f"  ✓ '{service_name}' → '{profile_name}' on {radio_desc}")
+
+        assignments[service_id] = profile_assignments
+
+    # Show summary
+    print("\n" + "=" * 70)
+    print("PROFILE ASSIGNMENT SUMMARY")
+    print("=" * 70)
+
+    total_assignments = sum(len(v) for v in assignments.values())
+    print(f"Total SSIDs with assignments: {len(assignments)}")
+    print(f"Total profile assignments: {total_assignments}")
+
+    if total_assignments > 0:
+        print("\nAssignments:")
+        for service in services:
+            service_id = service.get('id')
+            service_name = service.get('serviceName', 'Unknown')
+            if service_id in assignments and assignments[service_id]:
+                print(f"\n  {service_name}:")
+                for assignment in assignments[service_id]:
+                    radio_desc = {
+                        0: "all radios",
+                        1: "radio 1",
+                        2: "radio 2",
+                        3: "radio 3"
+                    }.get(assignment['radio_index'], f"radio {assignment['radio_index']}")
+                    print(f"    • {assignment['profile_name']} ({radio_desc})")
+
+    return assignments
+
+
 def select_objects_to_migrate(xiq_config):
     """
     Interactive selection of which objects to migrate
@@ -668,6 +858,70 @@ Examples:
                     print("\nDetails:")
                     for key, value in result['details'].items():
                         print(f"  {key}: {value}")
+
+                # If services were posted successfully, handle profile assignments
+                if campus_config.get('services'):
+                    print("\n" + "-" * 70)
+                    print("STEP 4: Associate SSIDs with Profiles")
+                    print("-" * 70)
+
+                    # Fetch available profiles
+                    print("\nFetching Associated Profiles from Edge Services...")
+                    profiles = controller_client.get_profiles()
+
+                    if profiles:
+                        # Interactive profile selection
+                        profile_assignments = select_profile_assignments(
+                            campus_config['services'],
+                            profiles,
+                            assume_yes=args.select_all
+                        )
+
+                        # Apply profile assignments
+                        if profile_assignments:
+                            print("\n" + "-" * 70)
+                            print("Applying profile assignments...")
+                            print("-" * 70)
+
+                            success_count = 0
+                            total_count = sum(len(v) for v in profile_assignments.values())
+
+                            for service_id, assignments in profile_assignments.items():
+                                # Find service name
+                                service_name = next(
+                                    (s.get('serviceName') for s in campus_config['services'] if s.get('id') == service_id),
+                                    'Unknown'
+                                )
+
+                                # Group assignments by profile
+                                profile_groups = {}
+                                for assignment in assignments:
+                                    profile_id = assignment['profile_id']
+                                    if profile_id not in profile_groups:
+                                        profile_groups[profile_id] = {
+                                            'profile_name': assignment['profile_name'],
+                                            'ssid_assignments': []
+                                        }
+                                    profile_groups[profile_id]['ssid_assignments'].append({
+                                        'serviceId': service_id,
+                                        'index': assignment['radio_index']
+                                    })
+
+                                # Update each profile
+                                for profile_id, group in profile_groups.items():
+                                    if args.verbose:
+                                        print(f"\n  Assigning '{service_name}' to profile '{group['profile_name']}'...")
+
+                                    if controller_client.update_profile_ssid_assignments(profile_id, group['ssid_assignments']):
+                                        success_count += len(group['ssid_assignments'])
+
+                            print(f"\n✓ Applied {success_count}/{total_count} profile assignments")
+                        else:
+                            print("\n  No profile assignments to apply")
+                    else:
+                        print("\n  ⚠ No profiles found - SSIDs created but not assigned to profiles")
+                        print("  You'll need to manually assign SSIDs to profiles in Edge Services UI")
+
             else:
                 print("\n" + "=" * 70)
                 print("✗ ERROR: Failed to post configuration")
