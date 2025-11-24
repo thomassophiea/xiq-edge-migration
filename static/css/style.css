@@ -890,14 +890,15 @@ select:hover:not(:focus) {
 .theme-switcher {
     display: flex;
     align-items: center;
-    gap: var(--spacing-sm);
+    gap: 4px;
     position: absolute;
-    top: var(--spacing-lg);
-    right: var(--spacing-lg);
+    top: 16px;
+    right: 16px;
+    z-index: 10;
 }
 
 .theme-switcher-label {
-    font-size: 0.875rem;
+    font-size: 0.75rem;
     color: var(--text-medium);
     font-weight: 500;
 }
@@ -905,24 +906,27 @@ select:hover:not(:focus) {
 .theme-toggle {
     display: flex;
     background: var(--bg-surface-4dp);
-    border-radius: 20px;
-    padding: 4px;
+    border-radius: 14px;
+    padding: 2px;
     border: 1px solid var(--border-color);
+    gap: 2px;
 }
 
 .theme-option {
-    padding: 6px 12px;
+    padding: 4px 8px;
     border: none;
     background: transparent;
     color: var(--text-medium);
-    font-size: 0.75rem;
+    font-size: 0.625rem;
     font-weight: 500;
     cursor: pointer;
-    border-radius: 16px;
+    border-radius: 12px;
     transition: var(--transition-fast);
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.3px;
     font-family: Roboto, sans-serif;
+    white-space: nowrap;
+    min-width: 36px;
 }
 
 .theme-option:hover {
@@ -938,4 +942,18 @@ select:hover:not(:focus) {
 
 header {
     position: relative;
+}
+
+/* Responsive adjustments for theme switcher */
+@media (max-width: 768px) {
+    .theme-switcher {
+        top: 12px;
+        right: 12px;
+    }
+
+    .theme-option {
+        padding: 3px 6px;
+        font-size: 0.5625rem;
+        min-width: 32px;
+    }
 }
