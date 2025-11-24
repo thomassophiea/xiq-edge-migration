@@ -5,6 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - XIQ Migration Tool</title>
     <link rel="stylesheet" href="/static/css/style.css">
+    <script>
+        // Initialize theme immediately to prevent flash
+        (function() {
+            const savedTheme = localStorage.getItem('theme') || 'dark';
+            const html = document.documentElement;
+
+            if (savedTheme === 'auto') {
+                const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+                html.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
+            } else {
+                html.setAttribute('data-theme', savedTheme);
+            }
+        })();
+    </script>
     <style>
         .login-container {
             display: flex;
@@ -47,6 +61,14 @@
     </style>
 </head>
 <body>
+    <div class="theme-switcher" style="position: fixed; top: 24px; right: 24px; z-index: 1000;">
+        <div class="theme-toggle">
+            <button class="theme-option active" data-theme="dark">Dark</button>
+            <button class="theme-option" data-theme="light">Light</button>
+            <button class="theme-option" data-theme="auto">Auto</button>
+        </div>
+    </div>
+
     <div class="login-container">
         <div class="login-card">
             <div class="login-header">
@@ -84,5 +106,59 @@
             </form>
         </div>
     </div>
+
+    <script>
+        // Theme switcher functionality
+        document.addEventListener('DOMContentLoaded', () => {
+            const savedTheme = localStorage.getItem('theme') || 'dark';
+
+            // Update active button
+            document.querySelectorAll('.theme-option').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.getAttribute('data-theme') === savedTheme) {
+                    btn.classList.add('active');
+                }
+            });
+
+            // Set up event listeners
+            document.querySelectorAll('.theme-option').forEach(button => {
+                button.addEventListener('click', () => {
+                    const theme = button.getAttribute('data-theme');
+                    setTheme(theme);
+                });
+            });
+
+            // Listen for system theme changes when in auto mode
+            if (window.matchMedia) {
+                window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+                    const currentTheme = localStorage.getItem('theme');
+                    if (currentTheme === 'auto') {
+                        applyTheme('auto');
+                    }
+                });
+            }
+        });
+
+        function setTheme(theme) {
+            localStorage.setItem('theme', theme);
+            applyTheme(theme);
+
+            document.querySelectorAll('.theme-option').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.querySelector(`[data-theme="${theme}"]`).classList.add('active');
+        }
+
+        function applyTheme(theme) {
+            const html = document.documentElement;
+
+            if (theme === 'auto') {
+                const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+                html.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
+            } else {
+                html.setAttribute('data-theme', theme);
+            }
+        }
+    </script>
 </body>
 </html>

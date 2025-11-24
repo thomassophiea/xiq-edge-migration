@@ -5,11 +5,32 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>XIQ to Edge Services Migration Tool</title>
     <link rel="stylesheet" href="/static/css/style.css">
+    <script>
+        // Initialize theme immediately to prevent flash
+        (function() {
+            const savedTheme = localStorage.getItem('theme') || 'dark';
+            const html = document.documentElement;
+
+            if (savedTheme === 'auto') {
+                const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+                html.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
+            } else {
+                html.setAttribute('data-theme', savedTheme);
+            }
+        })();
+    </script>
 </head>
 <body>
     <div class="container">
         <header>
             <h1>XIQ to Edge Services Migration Tool</h1>
+            <div class="theme-switcher">
+                <div class="theme-toggle">
+                    <button class="theme-option active" data-theme="dark">Dark</button>
+                    <button class="theme-option" data-theme="light">Light</button>
+                    <button class="theme-option" data-theme="auto">Auto</button>
+                </div>
+            </div>
         </header>
 
         <!-- Progress Bar -->

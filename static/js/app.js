@@ -12,6 +12,7 @@ let state = {
 
 // Initialize app
 document.addEventListener('DOMContentLoaded', () => {
+    initializeTheme();
     setupEventListeners();
     setupTabs();
     startLogPolling();
@@ -797,4 +798,65 @@ function toggleLogs() {
 
     logsBody.classList.toggle('collapsed');
     toggleIcon.classList.toggle('collapsed');
+}
+
+// Theme Management
+function initializeTheme() {
+    // Get saved preference or default to dark
+    const savedTheme = localStorage.getItem('theme') || 'dark';
+
+    // Apply theme
+    applyTheme(savedTheme);
+
+    // Update active button to match saved theme
+    document.querySelectorAll('.theme-option').forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.getAttribute('data-theme') === savedTheme) {
+            btn.classList.add('active');
+        }
+    });
+
+    // Set up theme switcher event listeners
+    document.querySelectorAll('.theme-option').forEach(button => {
+        button.addEventListener('click', () => {
+            const theme = button.getAttribute('data-theme');
+            setTheme(theme);
+        });
+    });
+
+    // Listen for system theme changes when in auto mode
+    if (window.matchMedia) {
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+            const currentTheme = localStorage.getItem('theme');
+            if (currentTheme === 'auto') {
+                applyTheme('auto');
+            }
+        });
+    }
+}
+
+function setTheme(theme) {
+    // Save preference
+    localStorage.setItem('theme', theme);
+
+    // Apply theme
+    applyTheme(theme);
+
+    // Update active button
+    document.querySelectorAll('.theme-option').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    document.querySelector(`[data-theme="${theme}"]`).classList.add('active');
+}
+
+function applyTheme(theme) {
+    const html = document.documentElement;
+
+    if (theme === 'auto') {
+        // Detect system preference
+        const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        html.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
+    } else {
+        html.setAttribute('data-theme', theme);
+    }
 }

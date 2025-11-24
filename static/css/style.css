@@ -69,6 +69,46 @@
     --radius: 4px;
 }
 
+/* Light Mode Theme */
+[data-theme="light"] {
+    /* Core Brand Colors - Adjusted for Light Mode */
+    --primary-color: #6200EE;              /* Material Violet 700 */
+    --primary-fg: rgba(255, 255, 255, 1);  /* White text on primary */
+    --secondary-color: #018786;            /* Material Teal 700 */
+    --secondary-fg: rgba(255, 255, 255, 1);
+
+    /* Background & Surfaces - Material Light */
+    --bg-primary: #FAFAFA;                 /* Material Light Background */
+    --bg-fg: rgba(0, 0, 0, 0.87);          /* High emphasis black */
+
+    /* Surface Elevations (subtle gray tones for light mode) */
+    --bg-surface-1dp: #FFFFFF;
+    --bg-surface-2dp: #F5F5F5;
+    --bg-surface-4dp: #EEEEEE;
+    --bg-surface-8dp: #E0E0E0;
+    --bg-surface-12dp: #BDBDBD;
+
+    /* Status & Semantic Colors - Darker for Light Mode */
+    --success-color: #2E7D32;              /* Material Green 800 */
+    --warning-color: #F57C00;              /* Material Orange 800 */
+    --error-color: #C62828;                /* Material Red 800 */
+    --info-color: #0097A7;                 /* Material Cyan 800 */
+
+    /* Text Emphasis Levels */
+    --text-high: rgba(0, 0, 0, 0.87);      /* High emphasis */
+    --text-medium: rgba(0, 0, 0, 0.60);    /* Medium emphasis */
+    --text-disabled: rgba(0, 0, 0, 0.38);  /* Disabled */
+
+    /* Interactive Elements */
+    --border-color: rgba(0, 0, 0, 0.12);
+    --focus-ring: #6200EE;
+    --hover-overlay: rgba(98, 0, 238, 0.04);
+    --focus-overlay: rgba(98, 0, 238, 0.12);
+    --active-overlay: rgba(98, 0, 238, 0.08);
+
+    /* Shadows remain the same */
+}
+
 body {
     font-family: Roboto, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     background: var(--bg-primary);
@@ -844,4 +884,58 @@ select:hover:not(:focus) {
 :disabled {
     opacity: 0.38;
     cursor: not-allowed;
+}
+
+/* Theme Switcher */
+.theme-switcher {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    position: absolute;
+    top: var(--spacing-lg);
+    right: var(--spacing-lg);
+}
+
+.theme-switcher-label {
+    font-size: 0.875rem;
+    color: var(--text-medium);
+    font-weight: 500;
+}
+
+.theme-toggle {
+    display: flex;
+    background: var(--bg-surface-4dp);
+    border-radius: 20px;
+    padding: 4px;
+    border: 1px solid var(--border-color);
+}
+
+.theme-option {
+    padding: 6px 12px;
+    border: none;
+    background: transparent;
+    color: var(--text-medium);
+    font-size: 0.75rem;
+    font-weight: 500;
+    cursor: pointer;
+    border-radius: 16px;
+    transition: var(--transition-fast);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-family: Roboto, sans-serif;
+}
+
+.theme-option:hover {
+    background: var(--hover-overlay);
+    color: var(--text-high);
+}
+
+.theme-option.active {
+    background: var(--primary-color);
+    color: var(--primary-fg);
+    box-shadow: var(--shadow-1dp);
+}
+
+header {
+    position: relative;
 }
