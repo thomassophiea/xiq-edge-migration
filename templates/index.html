@@ -31,19 +31,19 @@
                 <form id="xiqForm">
                     <div class="form-group">
                         <label for="xiqUsername">XIQ Username:</label>
-                        <input type="text" id="xiqUsername" name="username" required placeholder="user@example.com">
+                        <input type="text" id="xiqUsername" name="username" required placeholder="user@example.com" value="{{ xiq_username }}">
                     </div>
                     <div class="form-group">
                         <label for="xiqPassword">XIQ Password:</label>
-                        <input type="password" id="xiqPassword" name="password" required>
+                        <input type="password" id="xiqPassword" name="password" required value="{{ xiq_password }}">
                     </div>
                     <div class="form-group">
                         <label for="xiqRegion">Region:</label>
                         <select id="xiqRegion" name="region">
-                            <option value="Global">Global</option>
-                            <option value="EU">Europe</option>
-                            <option value="APAC">Asia Pacific</option>
-                            <option value="California">California</option>
+                            <option value="Global" {% if xiq_region == 'Global' %}selected{% endif %}>Global</option>
+                            <option value="EU" {% if xiq_region == 'EU' %}selected{% endif %}>Europe</option>
+                            <option value="APAC" {% if xiq_region == 'APAC' %}selected{% endif %}>Asia Pacific</option>
+                            <option value="California" {% if xiq_region == 'California' %}selected{% endif %}>California</option>
                         </select>
                     </div>
                     <button type="submit" class="btn btn-primary">Connect to XIQ</button>

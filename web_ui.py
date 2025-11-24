@@ -93,9 +93,11 @@ def login():
             )
 
             if xiq_client:
-                # Successful authentication
+                # Successful authentication - store credentials for auto-fill
                 session['logged_in'] = True
-                session['username'] = username
+                session['xiq_username'] = username
+                session['xiq_password'] = password
+                session['xiq_region'] = region
                 return redirect(url_for('index'))
             else:
                 return render_template('login.html', error='Invalid XIQ credentials')
@@ -121,7 +123,10 @@ def logout():
 @login_required
 def index():
     """Main page"""
-    return render_template('index.html')
+    return render_template('index.html',
+                         xiq_username=session.get('xiq_username', ''),
+                         xiq_password=session.get('xiq_password', ''),
+                         xiq_region=session.get('xiq_region', 'Global'))
 
 
 @app.route('/api/connect_xiq', methods=['POST'])
