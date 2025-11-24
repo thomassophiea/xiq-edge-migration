@@ -35,15 +35,15 @@ Then open your browser to: `http://localhost:5000`
 cd /Users/thomassophieaii/Documents/Claude/migration
 
 # Test with XIQ extraction only (dry-run)
-./migrate.sh --xiq-username tsophiea@extremenetworks.com --xiq-password 'TSts1232!!*7' --dry-run --verbose
+./migrate.sh --xiq-username 'yourusername' --xiq-password 'yourpassword' --dry-run --verbose
 
 # Full migration to Edge Services
 ./migrate.sh \
-  --xiq-username tsophiea@extremenetworks.com \
-  --xiq-password 'TSts1232!!*7' \
-  --controller-url https://tsophiea.ddns.net \
+  --xiq-username username \
+  --xiq-password '!*7' \
+  --controller-url https:// \
   --username admin \
-  --password 'TSts1232!!*7' \
+  --password '!*7' \
   --verbose
 ```
 
@@ -53,15 +53,15 @@ cd /Users/thomassophieaii/Documents/Claude/migration
 source venv/bin/activate
 
 # Test with XIQ extraction only (dry-run)
-python main.py --xiq-username tsophiea@extremenetworks.com --xiq-password 'TSts1232!!*7' --dry-run --verbose
+python main.py --xiq-username username --xiq-password '!*7' --dry-run --verbose
 
 # Full migration to Edge Services
 python main.py \
-  --xiq-username tsophiea@extremenetworks.com \
-  --xiq-password 'TSts1232!!*7' \
-  --controller-url https://tsophiea.ddns.net \
+  --xiq-username username \
+  --xiq-password '!*7' \
+  --controller-url https:// \
   --username admin \
-  --password 'TSts1232!!*7' \
+  --password '!*7' \
   --verbose
 
 # When done, deactivate the virtual environment
@@ -221,7 +221,7 @@ Then use the launcher script:
 ## Tested With
 
 - ✅ XIQ API (username/password login)
-- ✅ Edge Services v5.26 at tsophiea.ddns.net
+- ✅ Edge Services v5.26 at username.ddns.net
 - ✅ 20 SSIDs with various security types (Open, PSK, PPSK, 802.1X, OWE)
 - ✅ 5 VLANs with DNS servers and DHCP settings
 - ✅ 3 RADIUS servers
