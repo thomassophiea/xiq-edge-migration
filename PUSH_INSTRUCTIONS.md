@@ -6,7 +6,7 @@ Your code is **fully committed locally** and ready to push!
 
 - **Commit:** e9b3ca4
 - **Files:** 32 files, 40,093 lines
-- **Repository:** https://github.com/thomassophiea/xiq-edge-migration
+- **Repository:** https://github.com/yourusername/xiq-edge-migration
 
 ## 🔑 Issue: Token Needs 'repo' Scope
 
@@ -34,21 +34,21 @@ The token you provided doesn't have write permissions. Here's how to fix it:
 Once you have your new token, open Terminal and run:
 
 ```bash
-cd /Users/thomassophieaii/Documents/Claude/migration
+cd /path/to/xiq-edge-migration
 
 # Replace YOUR_NEW_TOKEN with the token you just copied
-git push https://thomassophiea:YOUR_NEW_TOKEN@github.com/thomassophiea/xiq-edge-migration.git main
+git push https://yourusername:YOUR_NEW_TOKEN@github.com/yourusername/xiq-edge-migration.git main
 ```
 
 **Example:**
 ```bash
-git push https://thomassophiea:github_pat_11AHPAYXY0NEW_TOKEN_HERE@github.com/thomassophiea/xiq-edge-migration.git main
+git push https://yourusername:github_pat_11AHPAYXY0NEW_TOKEN_HERE@github.com/yourusername/xiq-edge-migration.git main
 ```
 
 ### Step 3: Verify Upload
 
 After pushing, visit:
-**https://github.com/thomassophiea/xiq-edge-migration**
+**https://github.com/yourusername/xiq-edge-migration**
 
 You should see all your files!
 
@@ -71,7 +71,7 @@ If you prefer a GUI:
 1. Download GitHub Desktop: https://desktop.github.com
 2. Open GitHub Desktop
 3. File → Add Local Repository
-4. Browse to: `/Users/thomassophieaii/Documents/Claude/migration`
+4. Browse to: `/Users/yourusernameii/Documents/Claude/migration`
 5. Click "Publish repository"
 6. Login with your GitHub account
 
@@ -120,7 +120,7 @@ Delta compression using up to 8 threads
 Compressing objects: 100% (38/38), done.
 Writing objects: 100% (42/42), 1.19 MiB | 2.45 MiB/s, done.
 Total 42 (delta 1), reused 0 (delta 0), pack-reused 0
-To https://github.com/thomassophiea/xiq-edge-migration.git
+To https://github.com/yourusername/xiq-edge-migration.git
  * [new branch]      main -> main
 Branch 'main' set up to track remote branch 'main' from 'origin'.
 ```
@@ -129,4 +129,4 @@ Then visit your repo and it's live! 🎉
 
 ---
 
-**Need Help?** If you run into issues, the local repository at `/Users/thomassophieaii/Documents/Claude/migration` has everything safely committed.
+**Need Help?** If you run into issues, the local repository at `/Users/yourusernameii/Documents/Claude/migration` has everything safely committed.

@@ -6,9 +6,9 @@ import json
 import warnings
 warnings.filterwarnings('ignore')
 
-base_url = "https://tsophiea.ddns.net"
+base_url = "https://your-controller.example.com"
 username = "admin"
-password = "TSts1232!!*7"
+password = "your-password"
 
 print("Testing Edge Services API...")
 print("="*60)

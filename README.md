@@ -6,7 +6,7 @@ This is the working migration folder with all fixes applied.
 
 ### Step 1: Initial Setup (First Time Only)
 ```bash
-cd /Users/thomassophieaii/Documents/Claude/migration
+cd /path/to/xiq-edge-migration
 ./setup.sh
 ```
 
@@ -32,7 +32,7 @@ Then open your browser to: `http://localhost:5000`
 
 **Option A: Using the launcher script**
 ```bash
-cd /Users/thomassophieaii/Documents/Claude/migration
+cd /path/to/xiq-edge-migration
 
 # Test with XIQ extraction only (dry-run)
 ./migrate.sh --xiq-username 'yourusername' --xiq-password 'yourpassword' --dry-run --verbose
@@ -49,7 +49,7 @@ cd /Users/thomassophieaii/Documents/Claude/migration
 
 **Option B: Using the virtual environment directly**
 ```bash
-cd /Users/thomassophieaii/Documents/Claude/migration
+cd /path/to/xiq-edge-migration
 source venv/bin/activate
 
 # Test with XIQ extraction only (dry-run)
@@ -191,7 +191,7 @@ migration/
 ### Issue: "ModuleNotFoundError: No module named 'requests'"
 **Solution:** Run the setup script first to create the virtual environment and install dependencies:
 ```bash
-cd /Users/thomassophieaii/Documents/Claude/migration
+cd /path/to/xiq-edge-migration
 ./setup.sh
 ```
 Then use the launcher script:

@@ -148,7 +148,7 @@ campus_config = converter.convert(filtered_config, existing_topologies)
 After applying these changes, test with:
 
 ```bash
-python main.py --xiq-login --controller-url https://tsophiea.ddns.net --username admin --password "TSts1232!!*7"
+python main.py --xiq-login --controller-url https://your-controller.example.com --username admin --password "your-password"
 ```
 
 Expected behavior:

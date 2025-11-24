@@ -6,7 +6,7 @@ from src.config_converter import ConfigConverter
 from src.campus_controller_client import CampusControllerClient
 
 print('Step 1: Getting config from XIQ...')
-xiq = XIQAPIClient.login('tsophiea@extremenetworks.com', 'TSts1232!!*7', verbose=False)
+xiq = XIQAPIClient.login('user@example.com', 'your-xiq-password', verbose=False)
 config = xiq.get_configuration()
 
 print(f'  SSIDs: {len(config["ssids"])}')
@@ -44,9 +44,9 @@ if campus_config['services']:
 print('\nStep 3: Connecting to Edge Services...')
 try:
     cc = CampusControllerClient(
-        'https://tsophiea.ddns.net',
+        'https://your-controller.example.com',
         'admin',
-        'TSts1232!!*7',
+        'your-password',
         verbose=True
     )
     print('  ✓ Connected!')

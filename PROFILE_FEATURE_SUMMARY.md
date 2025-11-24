@@ -184,14 +184,14 @@ Applying profile assignments...
 ### Interactive Mode (Full Control)
 
 ```bash
-cd /Users/thomassophieaii/Documents/Claude/migration
+cd /path/to/xiq-edge-migration
 
 ./migrate.sh \
-  --xiq-username tsophiea@extremenetworks.com \
-  --xiq-password 'TSts1232!!*7' \
-  --controller-url https://tsophiea.ddns.net \
+  --xiq-username user@example.com \
+  --xiq-password 'your-password' \
+  --controller-url https://your-controller.example.com \
   --username admin \
-  --password 'TSts1232!!*7' \
+  --password 'your-password' \
   --verbose
 ```
 
@@ -205,11 +205,11 @@ cd /Users/thomassophieaii/Documents/Claude/migration
 
 ```bash
 ./migrate.sh \
-  --xiq-username tsophiea@extremenetworks.com \
-  --xiq-password 'TSts1232!!*7' \
-  --controller-url https://tsophiea.ddns.net \
+  --xiq-username user@example.com \
+  --xiq-password 'your-password' \
+  --controller-url https://your-controller.example.com \
   --username admin \
-  --password 'TSts1232!!*7' \
+  --password 'your-password' \
   --select-all \
   --verbose
 ```
@@ -404,22 +404,22 @@ The feature is **fully implemented, tested, and documented**.
 ### To Test:
 
 ```bash
-cd /Users/thomassophieaii/Documents/Claude/migration
+cd /path/to/xiq-edge-migration
 
 # Dry run to see the workflow
 ./migrate.sh \
-  --xiq-username tsophiea@extremenetworks.com \
-  --xiq-password 'TSts1232!!*7' \
+  --xiq-username user@example.com \
+  --xiq-password 'your-password' \
   --dry-run \
   --verbose
 
 # Live migration with profile assignment
 ./migrate.sh \
-  --xiq-username tsophiea@extremenetworks.com \
-  --xiq-password 'TSts1232!!*7' \
-  --controller-url https://tsophiea.ddns.net \
+  --xiq-username user@example.com \
+  --xiq-password 'your-password' \
+  --controller-url https://your-controller.example.com \
   --username admin \
-  --password 'TSts1232!!*7' \
+  --password 'your-password' \
   --verbose
 ```
 
@@ -430,7 +430,7 @@ cd /Users/thomassophieaii/Documents/Claude/migration
 ## 📖 Documentation Location
 
 **Primary Guide:**
-`/Users/thomassophieaii/Documents/Claude/migration/PROFILE_ASSIGNMENT_GUIDE.md`
+`PROFILE_ASSIGNMENT_GUIDE.md`
 
 **Quick Reference:**
 - README.md (workflow overview)
@@ -457,4 +457,4 @@ Every requirement you specified has been implemented:
 **Version:** 1.3.0
 **Date:** January 23, 2025
 **Implementation:** Autonomous (Claude Code)
-**Repository:** https://github.com/thomassophiea/xiq-edge-migration
+**Repository:** https://github.com/yourusername/xiq-edge-migration

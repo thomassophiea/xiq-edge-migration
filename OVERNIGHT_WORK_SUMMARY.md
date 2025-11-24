@@ -325,6 +325,6 @@ All code is production-ready, well-tested at compile-time, and properly document
 
 **Generated:** 2025-01-22
 **Version:** 1.2.0
-**Repository:** https://github.com/thomassophiea/xiq-edge-migration
+**Repository:** https://github.com/yourusername/xiq-edge-migration
 
 🤖 Autonomous implementation completed with Claude Code

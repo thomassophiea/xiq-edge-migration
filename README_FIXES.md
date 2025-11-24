@@ -78,9 +78,9 @@ python main.py --xiq-login
 # Or with credentials
 python main.py \
   --xiq-token YOUR_XIQ_TOKEN \
-  --controller-url https://tsophiea.ddns.net \
+  --controller-url https://your-controller.example.com \
   --username admin \
-  --password 'TSts1232!!*7'
+  --password 'your-password'
 ```
 
 ## Expected Results

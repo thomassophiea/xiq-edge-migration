@@ -3,7 +3,7 @@
 ## Launch the Web UI
 
 ```bash
-cd /Users/thomassophieaii/Documents/Claude/migration
+cd /path/to/xiq-edge-migration
 ./start_ui.sh
 ```
 
@@ -102,4 +102,4 @@ Both interfaces produce identical results!
 
 ---
 
-**Version:** 1.4.0 | **Repository:** https://github.com/thomassophiea/xiq-edge-migration
+**Version:** 1.4.0 | **Repository:** https://github.com/yourusername/xiq-edge-migration

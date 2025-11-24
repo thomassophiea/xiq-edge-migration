@@ -515,14 +515,14 @@ migration/
 ### Test the Full Workflow (Interactive)
 
 ```bash
-cd /Users/thomassophieaii/Documents/Claude/migration
+cd /path/to/xiq-edge-migration
 
 ./migrate.sh \
-  --xiq-username tsophiea@extremenetworks.com \
-  --xiq-password 'TSts1232!!*7' \
-  --controller-url https://tsophiea.ddns.net \
+  --xiq-username user@example.com \
+  --xiq-password 'your-password' \
+  --controller-url https://your-controller.example.com \
   --username admin \
-  --password 'TSts1232!!*7' \
+  --password 'your-password' \
   --verbose
 ```
 
@@ -540,11 +540,11 @@ cd /Users/thomassophieaii/Documents/Claude/migration
 
 ```bash
 ./migrate.sh \
-  --xiq-username tsophiea@extremenetworks.com \
-  --xiq-password 'TSts1232!!*7' \
-  --controller-url https://tsophiea.ddns.net \
+  --xiq-username user@example.com \
+  --xiq-password 'your-password' \
+  --controller-url https://your-controller.example.com \
   --username admin \
-  --password 'TSts1232!!*7' \
+  --password 'your-password' \
   --select-all \
   --verbose
 ```
@@ -592,4 +592,4 @@ All features implemented, tested, and documented.
 ---
 
 **Generated with:** [Claude Code](https://claude.com/claude-code)
-**Repository:** https://github.com/thomassophiea/xiq-edge-migration
+**Repository:** https://github.com/yourusername/xiq-edge-migration

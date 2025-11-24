@@ -17,7 +17,7 @@ All SSIDs migrated to Edge Services are **automatically created in DISABLED stat
 **Command Run:**
 ```bash
 python main.py \
-  --xiq-username tsophiea@extremenetworks.com \
+  --xiq-username user@example.com \
   --dry-run \
   --select-all \
   --output /tmp/verify_disabled.json
@@ -291,4 +291,4 @@ If SSIDs are not disabled:
 ---
 
 **Generated with:** [Claude Code](https://claude.com/claude-code)
-**Repository:** https://github.com/thomassophiea/xiq-edge-migration
+**Repository:** https://github.com/yourusername/xiq-edge-migration

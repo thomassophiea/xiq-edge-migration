@@ -45,7 +45,7 @@ Before using the Web UI, ensure you have:
 The Web UI is already included in the migration tool. Install dependencies:
 
 ```bash
-cd /Users/thomassophieaii/Documents/Claude/migration
+cd /path/to/xiq-edge-migration
 
 # Activate virtual environment
 source venv/bin/activate
@@ -67,14 +67,14 @@ Or simply run the launcher script (it will install dependencies automatically):
 ### Option 1: Using the Launcher Script (Recommended)
 
 ```bash
-cd /Users/thomassophieaii/Documents/Claude/migration
+cd /path/to/xiq-edge-migration
 ./start_ui.sh
 ```
 
 ### Option 2: Manual Start
 
 ```bash
-cd /Users/thomassophieaii/Documents/Claude/migration
+cd /path/to/xiq-edge-migration
 source venv/bin/activate
 python3 web_ui.py
 ```
@@ -144,7 +144,7 @@ Step 6: View Results
 
 | Field | Description | Example |
 |-------|-------------|---------|
-| XIQ Username | Your XIQ account email | `tsophiea@extremenetworks.com` |
+| XIQ Username | Your XIQ account email | `user@example.com` |
 | XIQ Password | Your XIQ password | `********` |
 | Region | XIQ region | Global, EU, APAC, California |
 
@@ -234,7 +234,7 @@ The selection interface has three tabs:
 
 | Field | Description | Example |
 |-------|-------------|---------|
-| Edge Services URL | HTTPS URL of your Edge Services controller | `https://tsophiea.ddns.net` |
+| Edge Services URL | HTTPS URL of your Edge Services controller | `https://your-controller.example.com` |
 | Username | Edge Services admin username | `admin` |
 | Password | Edge Services admin password | `********` |
 
@@ -459,7 +459,7 @@ MIGRATION LOGS                                                [Clear]
 14:32:17 [INFO]    Successfully authenticated with XIQ
 14:32:17 [INFO]    Fetching SSIDs...
 14:32:19 [INFO]    Retrieved 19 SSIDs, 5 VLANs, 3 RADIUS servers, 10 devices
-14:32:45 [INFO]    Connecting to Edge Services at https://tsophiea.ddns.net...
+14:32:45 [INFO]    Connecting to Edge Services at https://your-controller.example.com...
 14:32:47 [INFO]    Successfully authenticated with Edge Services
 14:32:47 [INFO]    Fetching Associated Profiles...
 14:32:48 [INFO]    Retrieved 5 Associated Profiles
@@ -903,7 +903,7 @@ The Web UI provides a modern, user-friendly interface for the XIQ to Edge Servic
 **Start the Web UI:**
 
 ```bash
-cd /Users/thomassophieaii/Documents/Claude/migration
+cd /path/to/xiq-edge-migration
 ./start_ui.sh
 ```
 
@@ -912,6 +912,6 @@ cd /Users/thomassophieaii/Documents/Claude/migration
 ---
 
 **Generated with:** [Claude Code](https://claude.com/claude-code)
-**Repository:** https://github.com/thomassophiea/xiq-edge-migration
+**Repository:** https://github.com/yourusername/xiq-edge-migration
 **Version:** 1.3.0
 **Date:** January 23, 2025

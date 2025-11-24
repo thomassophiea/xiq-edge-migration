@@ -338,7 +338,7 @@ async function executeMigration() { ... }
 **Simple Method:**
 
 ```bash
-cd /Users/thomassophieaii/Documents/Claude/migration
+cd /path/to/xiq-edge-migration
 ./start_ui.sh
 ```
 
@@ -801,7 +801,7 @@ The Web UI is ready for production use with the following considerations:
 ### Launch Instructions
 
 ```bash
-cd /Users/thomassophieaii/Documents/Claude/migration
+cd /path/to/xiq-edge-migration
 ./start_ui.sh
 ```
 
@@ -827,4 +827,4 @@ Then open: `http://localhost:5000`
 ---
 
 **Generated with:** [Claude Code](https://claude.com/claude-code)
-**Repository:** https://github.com/thomassophiea/xiq-edge-migration
+**Repository:** https://github.com/yourusername/xiq-edge-migration

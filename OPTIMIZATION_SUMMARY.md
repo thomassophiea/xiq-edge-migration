@@ -269,7 +269,7 @@ Edge Services API
 - 400+ Postman requests
 - Python code examples
 - XIQ API patterns
-- Located: `/Users/thomassophieaii/Documents/Claude/migration/ExtremeCloudIQ-APIs/`
+- Located: `/path/to/xiq-edge-migration/ExtremeCloudIQ-APIs/`
 
 ---
 

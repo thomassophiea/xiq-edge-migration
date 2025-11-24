@@ -15,7 +15,7 @@ Railway offers 500 hours/month free tier with $5 credit.
 
 1. **Push your code to GitHub**
    ```bash
-   cd /Users/thomassophieaii/Documents/Claude/migration
+   cd /path/to/xiq-edge-migration
    git init
    git add .
    git commit -m "Initial commit - XIQ Migration Tool"

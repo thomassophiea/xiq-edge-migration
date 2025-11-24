@@ -2,8 +2,6 @@
 
 ## ✅ All Fixes Applied and Verified
 
-Location: `/Users/thomassophieaii/Documents/Claude/migration/`
-
 ### Verified Fixes:
 
 1. ✅ `get_existing_topologies()` method exists in campus_controller_client.py (line 127)
@@ -17,16 +15,16 @@ Location: `/Users/thomassophieaii/Documents/Claude/migration/`
 
 **IMPORTANT:** Run the setup script first to create the virtual environment:
 ```bash
-cd /Users/thomassophieaii/Documents/Claude/migration
+cd /path/to/xiq-edge-migration
 ./setup.sh
 ```
 
 ### Test 1: XIQ Connection Only (Dry Run)
 ```bash
-cd /Users/thomassophieaii/Documents/Claude/migration
+cd /path/to/xiq-edge-migration
 ./migrate.sh \
-  --xiq-username tsophiea@extremenetworks.com \
-  --xiq-password 'TSts1232!!*7' \
+  --xiq-username user@example.com \
+  --xiq-password 'your-password' \
   --dry-run \
   --verbose
 ```
@@ -35,13 +33,13 @@ cd /Users/thomassophieaii/Documents/Claude/migration
 
 ### Test 2: Full Migration with Selection
 ```bash
-cd /Users/thomassophieaii/Documents/Claude/migration
+cd /path/to/xiq-edge-migration
 ./migrate.sh \
-  --xiq-username tsophiea@extremenetworks.com \
-  --xiq-password 'TSts1232!!*7' \
-  --controller-url https://tsophiea.ddns.net \
+  --xiq-username user@example.com \
+  --xiq-password 'your-password' \
+  --controller-url https://your-controller.example.com \
   --username admin \
-  --password 'TSts1232!!*7' \
+  --password 'your-password' \
   --verbose
 ```
 
@@ -76,13 +74,13 @@ Details:
 
 ### Test 3: Select Specific SSIDs
 ```bash
-cd /Users/thomassophieaii/Documents/Claude/migration
+cd /path/to/xiq-edge-migration
 ./migrate.sh \
-  --xiq-username tsophiea@extremenetworks.com \
-  --xiq-password 'TSts1232!!*7' \
-  --controller-url https://tsophiea.ddns.net \
+  --xiq-username user@example.com \
+  --xiq-password 'your-password' \
+  --controller-url https://your-controller.example.com \
   --username admin \
-  --password 'TSts1232!!*7'
+  --password 'your-password'
 ```
 
 Then when prompted:
@@ -93,13 +91,13 @@ Then when prompted:
 ## Known Good Configuration
 
 ### XIQ Credentials:
-- **Email:** tsophiea@extremenetworks.com
-- **Password:** TSts1232!!*7
+- **Email:** user@example.com
+- **Password:** your-password
 
 ### Edge Services:
-- **URL:** https://tsophiea.ddns.net
+- **URL:** https://your-controller.example.com
 - **Username:** admin
-- **Password:** TSts1232!!*7
+- **Password:** your-password
 
 ### Expected XIQ Data:
 - 20 SSIDs (ssid0, Skynet, Skynet_Junior, Skynet_Guest, etc.)
@@ -129,12 +127,12 @@ After running migration, verify:
 
 1. **Check XIQ authentication:**
    ```bash
-   python -c "from src.xiq_api_client import XIQAPIClient; client = XIQAPIClient.login('tsophiea@extremenetworks.com', 'TSts1232!!*7', verbose=True); print('Success!')"
+   python -c "from src.xiq_api_client import XIQAPIClient; client = XIQAPIClient.login('user@example.com', 'your-password', verbose=True); print('Success!')"
    ```
 
 2. **Check Edge Services connection:**
    ```bash
-   python -c "from src.campus_controller_client import CampusControllerClient; client = CampusControllerClient('https://tsophiea.ddns.net', 'admin', 'TSts1232!!*7', verbose=True); print(f'Topologies: {len(client.get_existing_topologies())}')"
+   python -c "from src.campus_controller_client import CampusControllerClient; client = CampusControllerClient('https://your-controller.example.com', 'admin', 'your-password', verbose=True); print(f'Topologies: {len(client.get_existing_topologies())}')"
    ```
 
 3. **Check conversion:**

@@ -484,9 +484,9 @@ If you encounter issues with profile assignments:
 2. Verify profiles exist in Edge Services
 3. Check AP-to-profile assignments
 4. Review verbose logs (`--verbose` flag)
-5. Report issues at: https://github.com/thomassophiea/xiq-edge-migration/issues
+5. Report issues at: https://github.com/yourusername/xiq-edge-migration/issues
 
 ---
 
 **Generated with:** [Claude Code](https://claude.com/claude-code)
-**Repository:** https://github.com/thomassophiea/xiq-edge-migration
+**Repository:** https://github.com/yourusername/xiq-edge-migration

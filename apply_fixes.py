@@ -165,8 +165,8 @@ def apply_patches():
     print("✅ Patching complete!")
     print("=" * 70)
     print("\nYou can now test the converter:")
-    print("  python main.py --xiq-login --controller-url https://tsophiea.ddns.net \\")
-    print("    --username admin --password 'TSts1232!!*7'")
+    print("  python main.py --xiq-login --controller-url https://your-controller.example.com \\")
+    print("    --username admin --password 'your-password'")
     print("\nBackup files have been created with .backup extension")
 
 if __name__ == "__main__":

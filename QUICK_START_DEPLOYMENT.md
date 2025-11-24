@@ -30,7 +30,7 @@ Your application is now ready for deployment with XIQ-based authentication!
 
 1. **Create GitHub Repository**
    ```bash
-   cd /Users/thomassophieaii/Documents/Claude/migration
+   cd /path/to/xiq-edge-migration
    git init
    git add .
    git commit -m "XIQ Migration Tool - Ready for deployment"

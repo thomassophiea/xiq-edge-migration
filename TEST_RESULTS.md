@@ -16,7 +16,7 @@ All features implemented in Quick Wins Phase 1 have been verified and are workin
 **Command:**
 ```bash
 python main.py \
-  --xiq-username tsophiea@extremenetworks.com \
+  --xiq-username user@example.com \
   --xiq-password <redacted> \
   --dry-run \
   --select-all \
@@ -484,4 +484,4 @@ python3 -m py_compile main.py                     ✓ PASS
 ---
 
 **Generated with:** [Claude Code](https://claude.com/claude-code)
-**Repository:** https://github.com/thomassophiea/xiq-edge-migration
+**Repository:** https://github.com/yourusername/xiq-edge-migration
