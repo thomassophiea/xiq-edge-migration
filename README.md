@@ -12,9 +12,25 @@ cd /Users/thomassophieaii/Documents/Claude/migration
 
 This creates a Python virtual environment and installs all dependencies.
 
-### Step 2: Run the Migration Tool
+### Step 2: Choose Your Interface
 
-**Option A: Using the launcher script (recommended)**
+The migration tool offers two interfaces:
+
+**🌐 Web UI (NEW! - Recommended for most users)**
+```bash
+./start_ui.sh
+```
+Then open your browser to: `http://localhost:5000`
+
+- Point-and-click interface
+- Visual progress tracking
+- Interactive object selection
+- No command-line knowledge required
+- See [WEB_UI_GUIDE.md](WEB_UI_GUIDE.md) for details
+
+**💻 Command Line Interface (For automation & advanced users)**
+
+**Option A: Using the launcher script**
 ```bash
 cd /Users/thomassophieaii/Documents/Claude/migration
 

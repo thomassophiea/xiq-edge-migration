@@ -1,15 +1,23 @@
+# Environment variables
+.env
+.env.local
+
 # Python
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
 .Python
-*.egg-info/
-dist/
-build/
 venv/
 env/
 ENV/
+build/
+dist/
+*.egg-info/
+
+# Flask
+instance/
+.webassets-cache
 
 # IDE
 .vscode/
@@ -22,34 +30,14 @@ ENV/
 .DS_Store
 Thumbs.db
 
-# Backups
-*.backup
-*.bak
-
 # Logs
 *.log
 
-# Credentials (IMPORTANT - never commit passwords!)
-*password*
-*secret*
-credentials.json
-.env
-
-# Large external dependencies
-ExtremeCloudIQ-APIs/
-
 # Temporary files
+/tmp/
 *.tmp
-temp/
-tmp/
 
-# Test outputs
-test_output/
-*.test
-
-# CSV exports
-*.csv
-exports/
-
-# Local settings
+# Downloaded files
+ExtremeCloudIQ-APIs/
+*.zip
 .claude/settings.local.json

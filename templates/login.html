@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - XIQ Migration Tool</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        .login-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 24px;
+        }
+        .login-card {
+            background: var(--bg-card);
+            border-radius: var(--radius-lg);
+            padding: 40px;
+            max-width: 400px;
+            width: 100%;
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-lg);
+        }
+        .login-header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+        .login-header h1 {
+            font-size: 1.75rem;
+            margin-bottom: 8px;
+            color: var(--text-primary);
+        }
+        .login-header p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+        .error-message {
+            background: var(--danger-glow);
+            color: var(--danger-color);
+            padding: 12px 16px;
+            border-radius: var(--radius);
+            margin-bottom: 16px;
+            font-size: 0.875rem;
+            border: 1px solid var(--danger-color);
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-card">
+            <div class="login-header">
+                <h1>XIQ Migration Tool</h1>
+                <p>Sign in to continue</p>
+            </div>
+
+            {% if error %}
+            <div class="error-message">
+                {{ error }}
+            </div>
+            {% endif %}
+
+            <form method="POST" action="/login">
+                <div class="form-group">
+                    <label for="username">XIQ Username</label>
+                    <input type="text" id="username" name="username" required autofocus placeholder="user@example.com">
+                </div>
+                <div class="form-group">
+                    <label for="password">XIQ Password</label>
+                    <input type="password" id="password" name="password" required>
+                </div>
+                <div class="form-group">
+                    <label for="region">XIQ Region</label>
+                    <select id="region" name="region" required>
+                        <option value="Global">Global</option>
+                        <option value="EU">Europe</option>
+                        <option value="APAC">Asia Pacific</option>
+                        <option value="California">California</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 8px;">
+                    Sign In
+                </button>
+            </form>
+        </div>
+    </div>
+</body>
+</html>

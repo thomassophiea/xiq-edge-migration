@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>XIQ to Edge Services Migration Tool</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>XIQ to Edge Services Migration Tool</h1>
+            <p class="subtitle">Web Interface v2.4.0</p>
+        </header>
+
+        <!-- Progress Bar -->
+        <div class="progress-section" id="progressSection" style="display: none;">
+            <div class="progress-bar-container">
+                <div class="progress-bar" id="progressBar"></div>
+            </div>
+            <p class="progress-text" id="progressText">Idle</p>
+        </div>
+
+        <!-- Step 1: XIQ Connection -->
+        <section class="card" id="step1">
+            <div class="card-header">
+                <h2>Step 1: Connect to ExtremeCloud IQ</h2>
+                <span class="step-status" id="step1Status">Pending</span>
+            </div>
+            <div class="card-body">
+                <form id="xiqForm">
+                    <div class="form-group">
+                        <label for="xiqUsername">XIQ Username:</label>
+                        <input type="text" id="xiqUsername" name="username" required placeholder="user@example.com">
+                    </div>
+                    <div class="form-group">
+                        <label for="xiqPassword">XIQ Password:</label>
+                        <input type="password" id="xiqPassword" name="password" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="xiqRegion">Region:</label>
+                        <select id="xiqRegion" name="region">
+                            <option value="Global">Global</option>
+                            <option value="EU">Europe</option>
+                            <option value="APAC">Asia Pacific</option>
+                            <option value="California">California</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Connect to XIQ</button>
+                </form>
+
+                <div id="xiqResults" class="results" style="display: none;">
+                    <h3>Retrieved from XIQ:</h3>
+                    <div class="results-grid">
+                        <div class="result-item">
+                            <span class="result-label">SSIDs:</span>
+                            <span class="result-value" id="xiqSsidCount">0</span>
+                        </div>
+                        <div class="result-item">
+                            <span class="result-label">VLANs:</span>
+                            <span class="result-value" id="xiqVlanCount">0</span>
+                        </div>
+                        <div class="result-item">
+                            <span class="result-label">RADIUS:</span>
+                            <span class="result-value" id="xiqRadiusCount">0</span>
+                        </div>
+                        <div class="result-item">
+                            <span class="result-label">Devices:</span>
+                            <span class="result-value" id="xiqDeviceCount">0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Step 2: Select Objects -->
+        <section class="card" id="step2" style="display: none;">
+            <div class="card-header">
+                <h2>Step 2: Select Objects to Migrate</h2>
+                <span class="step-status" id="step2Status">Pending</span>
+            </div>
+            <div class="card-body">
+                <div class="selection-tabs">
+                    <button class="tab-button active" data-tab="ssids">SSIDs</button>
+                    <button class="tab-button" data-tab="vlans">VLANs</button>
+                    <button class="tab-button" data-tab="radius">RADIUS</button>
+                </div>
+
+                <div class="tab-content">
+                    <!-- SSIDs Tab -->
+                    <div class="tab-panel active" id="ssids-panel">
+                        <div class="selection-header">
+                            <button class="btn btn-sm" onclick="selectAll('ssids')">Select All</button>
+                            <button class="btn btn-sm" onclick="selectNone('ssids')">Select None</button>
+                        </div>
+                        <div class="selection-list" id="ssidList"></div>
+                    </div>
+
+                    <!-- VLANs Tab -->
+                    <div class="tab-panel" id="vlans-panel">
+                        <div class="selection-header">
+                            <button class="btn btn-sm btn-primary" onclick="autoSelectVlans()">Auto-select</button>
+                            <button class="btn btn-sm" onclick="selectAll('vlans')">Select All</button>
+                            <button class="btn btn-sm" onclick="selectNone('vlans')">Select None</button>
+                        </div>
+                        <div class="selection-list" id="vlanList"></div>
+                    </div>
+
+                    <!-- RADIUS Tab -->
+                    <div class="tab-panel" id="radius-panel">
+                        <div class="selection-header">
+                            <button class="btn btn-sm" onclick="selectAll('radius')">Select All</button>
+                            <button class="btn btn-sm" onclick="selectNone('radius')">Select None</button>
+                        </div>
+                        <div class="selection-list" id="radiusList"></div>
+                    </div>
+                </div>
+
+                <button class="btn btn-primary" onclick="proceedToEdge()">Continue</button>
+            </div>
+        </section>
+
+        <!-- Step 3: Edge Services Connection -->
+        <section class="card" id="step3" style="display: none;">
+            <div class="card-header">
+                <h2>Step 3: Connect to Edge Services</h2>
+                <span class="step-status" id="step3Status">Pending</span>
+            </div>
+            <div class="card-body">
+                <form id="edgeForm">
+                    <div class="form-group">
+                        <label for="edgeUrl">Edge Services URL:</label>
+                        <input type="url" id="edgeUrl" name="controller_url" required placeholder="https://controller.example.com">
+                    </div>
+                    <div class="form-group">
+                        <label for="edgeUsername">Username:</label>
+                        <input type="text" id="edgeUsername" name="username" required value="admin">
+                    </div>
+                    <div class="form-group">
+                        <label for="edgePassword">Password:</label>
+                        <input type="password" id="edgePassword" name="password" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Connect to Edge Services</button>
+                </form>
+            </div>
+        </section>
+
+        <!-- Step 4: Profile Assignments -->
+        <section class="card" id="step4" style="display: none;">
+            <div class="card-header">
+                <h2>Step 4: Assign SSIDs to Profiles</h2>
+                <span class="step-status" id="step4Status">Pending</span>
+            </div>
+            <div class="card-body">
+                <p class="info-text">Select which Associated Profiles each SSID should be assigned to, and which radios should broadcast them.</p>
+
+                <div id="profileAssignments"></div>
+
+                <div class="assignment-actions">
+                    <button class="btn btn-secondary" onclick="assignAllToAll()">Assign All SSIDs to All Profiles</button>
+                    <button class="btn btn-secondary" onclick="assignAllToCustom()">Assign All to Custom Profiles Only</button>
+                    <button class="btn btn-primary" onclick="proceedToMigration()">Continue to Migration</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Step 5: Review and Execute -->
+        <section class="card" id="step5" style="display: none;">
+            <div class="card-header">
+                <h2>Step 5: Review and Execute Migration</h2>
+                <span class="step-status" id="step5Status">Pending</span>
+            </div>
+            <div class="card-body">
+                <div class="review-summary">
+                    <h3>Migration Summary</h3>
+                    <div class="summary-grid" id="migrationSummary"></div>
+                </div>
+
+                <div class="migration-options">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="dryRun">
+                        Dry Run (no changes will be made)
+                    </label>
+                </div>
+
+                <div class="migration-actions">
+                    <button class="btn btn-lg btn-success" onclick="executeMigration()">Execute Migration</button>
+                    <button class="btn btn-lg btn-secondary" onclick="resetMigration()">Start Over</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Step 6: Results -->
+        <section class="card" id="step6" style="display: none;">
+            <div class="card-header">
+                <h2>Migration Results</h2>
+                <span class="step-status" id="step6Status">Completed</span>
+            </div>
+            <div class="card-body">
+                <div id="migrationResults" class="results"></div>
+                <button class="btn btn-primary" onclick="resetMigration()">Start New Migration</button>
+            </div>
+        </section>
+
+        <!-- Logs Panel -->
+        <section class="card logs-card">
+            <div class="card-header" onclick="toggleLogs()" style="cursor: pointer;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span id="logsToggleIcon" class="collapsed">▼</span>
+                    <h2>Migration Logs</h2>
+                </div>
+                <button class="btn btn-sm" onclick="event.stopPropagation(); clearLogs();">Clear</button>
+            </div>
+            <div class="card-body collapsed" id="logsBody">
+                <div class="logs" id="logsPanel"></div>
+            </div>
+        </section>
+    </div>
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html>

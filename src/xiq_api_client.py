@@ -260,6 +260,7 @@ class XIQAPIClient:
             normalized_ssids = []
             for ssid in ssids:
                 normalized_ssids.append({
+                    'id': ssid.get('id'),  # Add the SSID ID from XIQ
                     'name': ssid.get('ssid_name', ssid.get('name', '')),
                     'enabled': ssid.get('enabled_status') == 'ENABLE' if 'enabled_status' in ssid else ssid.get('enabled', True),
                     'broadcast_ssid': ssid.get('broadcast_ssid', True),
