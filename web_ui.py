@@ -189,10 +189,10 @@ def connect_xiq():
         return jsonify({
             'success': True,
             'data': {
-                'ssids': [{'id': s.get('id'), 'name': s.get('name', s.get('ssid_name'))} for s in ssids],
-                'vlans': [{'id': v.get('id'), 'name': v.get('name'), 'vlan_id': v.get('vlan_id')} for v in vlans],
-                'radius_servers': [{'id': r.get('id'), 'name': r.get('name'), 'ip': r.get('ip')} for r in radius_servers],
-                'devices': [{'serial': d.get('serial_number'), 'name': d.get('hostname'), 'location': d.get('location')} for d in devices]
+                'ssids': [{'id': s.get('id'), 'name': s.get('name', s.get('ssid_name', 'Unknown'))} for s in ssids],
+                'vlans': [{'id': v.get('id'), 'name': v.get('name', 'Unknown'), 'vlan_id': v.get('vlan_id')} for v in vlans],
+                'radius_servers': [{'id': r.get('id'), 'name': r.get('name', 'Unknown'), 'ip': r.get('ip', 'Unknown')} for r in radius_servers],
+                'devices': [{'serial': d.get('serial_number', 'Unknown'), 'name': d.get('name', d.get('hostname', 'Unknown')), 'location': d.get('location', 'N/A')} for d in devices]
             }
         })
 

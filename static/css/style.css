@@ -944,6 +944,37 @@ header {
     position: relative;
 }
 
+/* Logout Button */
+.btn-logout {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    background: var(--bg-surface-4dp);
+    border: 1px solid var(--border-color);
+    border-radius: 50%;
+    color: var(--text-medium);
+    text-decoration: none;
+    transition: var(--transition-fast);
+    cursor: pointer;
+}
+
+.btn-logout:hover {
+    background: var(--hover-overlay);
+    color: var(--error-color);
+    border-color: var(--error-color);
+    transform: scale(1.05);
+}
+
+.btn-logout:active {
+    transform: scale(0.95);
+}
+
+.btn-logout svg {
+    display: block;
+}
+
 /* Responsive adjustments for theme switcher */
 @media (max-width: 768px) {
     .theme-switcher {
@@ -955,5 +986,15 @@ header {
         padding: 3px 6px;
         font-size: 0.5625rem;
         min-width: 32px;
+    }
+
+    .btn-logout {
+        width: 32px;
+        height: 32px;
+    }
+
+    .btn-logout svg {
+        width: 16px;
+        height: 16px;
     }
 }

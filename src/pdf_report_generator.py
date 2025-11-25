@@ -21,9 +21,32 @@ class MigrationReportGenerator:
     def __init__(self):
         self.styles = getSampleStyleSheet()
         self._setup_custom_styles()
+        self._setup_table_styles()
+
+    def _wrap_text(self, text: str, style_name: str = 'Normal') -> Paragraph:
+        """Wrap text in a Paragraph for proper table cell wrapping"""
+        if text is None:
+            text = ''
+        return Paragraph(str(text), self.styles[style_name])
+
+    def _setup_table_styles(self):
+        """Setup common table style with text wrapping"""
+        self.common_table_style = TableStyle([
+            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+            ('WORDWRAP', (0, 0), (-1, -1), True),
+        ])
 
     def _setup_custom_styles(self):
         """Setup custom paragraph styles"""
+        # Table cell style for wrapping
+        self.styles.add(ParagraphStyle(
+            name='TableCell',
+            parent=self.styles['Normal'],
+            fontSize=7,
+            leading=9,
+            wordWrap='CJK'
+        ))
+
         # Title style
         self.styles.add(ParagraphStyle(
             name='CustomTitle',
@@ -659,7 +682,7 @@ class MigrationReportGenerator:
         # SSID Mapping
         elements.append(Paragraph("1. SSID (Wireless Network) Mapping", self.styles['SubsectionHeader']))
 
-        ssid_mapping = [
+        ssid_mapping_data = [
             ['XIQ Object', 'Edge Services Object', 'API Endpoint', 'Notes'],
             ['SSID Profile', 'Service', '/management/v1/services', 'One-to-one mapping'],
             ['SSID Name', 'serviceName + ssid', 'POST /services', 'Must be unique'],
@@ -670,7 +693,12 @@ class MigrationReportGenerator:
             ['Client Isolation', 'isolation', 'POST /services', 'Not directly supported'],
         ]
 
-        ssid_table = Table(ssid_mapping, colWidths=[1.5*inch, 1.5*inch, 2*inch, 1.5*inch])
+        # Wrap text in cells for proper wrapping
+        ssid_mapping = []
+        for row in ssid_mapping_data:
+            ssid_mapping.append([self._wrap_text(cell, 'TableCell') for cell in row])
+
+        ssid_table = Table(ssid_mapping, colWidths=[1.5*inch, 1.5*inch, 1.8*inch, 1.7*inch])
         ssid_table.setStyle(TableStyle([
             ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#6200EE')),
             ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
@@ -795,7 +823,7 @@ class MigrationReportGenerator:
         ))
         elements.append(Spacer(1, 0.1 * inch))
 
-        profile_mapping = [
+        profile_mapping_data = [
             ['Step', 'Action', 'API Endpoint', 'Required Fields'],
             ['1', 'Create Service (SSID)', 'POST /management/v1/services', 'serviceName, ssid, privacy'],
             ['2', 'Get Service UUID', 'GET /management/v1/services', 'Extract id from response'],
@@ -804,7 +832,12 @@ class MigrationReportGenerator:
             ['5', 'Select Radio', 'PATCH /management/v1/apconfig/{id}', 'radioIndex: 0=all, 1=2.4G, 2=5G, 3=6G'],
         ]
 
-        profile_table = Table(profile_mapping, colWidths=[0.5*inch, 2*inch, 2.5*inch, 1.5*inch])
+        # Wrap text in cells
+        profile_mapping = []
+        for row in profile_mapping_data:
+            profile_mapping.append([self._wrap_text(cell, 'TableCell') for cell in row])
+
+        profile_table = Table(profile_mapping, colWidths=[0.5*inch, 1.8*inch, 2.3*inch, 1.9*inch])
         profile_table.setStyle(TableStyle([
             ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#018786')),
             ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
@@ -1028,19 +1061,24 @@ PATCH /management/v1/apconfig/{profile-uuid}
         elements.append(Spacer(1, 0.2 * inch))
 
         # Complete mapping table
-        mapping_data = [
+        mapping_data_raw = [
             ['XIQ Object', 'Edge Services Object', 'NGC Object', 'NGC API Endpoint', 'Key Differences'],
-            ['SSID Profile', 'Service\n(/v1/services)', 'Network\n(/v1/ngc/networks)', 'POST /api/v1/ngc/networks', 'NGC adds band selection, identity pools'],
-            ['VLAN', 'Topology\n(/v1/topologies)', 'vlan_assignment\n(in Network)', 'Network.vlan_assignment', 'Can use site variable: {vlan_guest}'],
-            ['RADIUS Server', 'AAA Policy\n(/v1/aaapolicy)', 'Server\n(/v1/ngc/servers)', 'POST /api/v1/ngc/servers', 'Global object, reusable across sites'],
-            ['Device Profile', 'AP Config\n(/v1/apconfig)', 'AP_Profile\n(/v1/ngc/profiles)', 'POST /api/v1/ngc/profiles', 'Template-based, with inheritance'],
-            ['Radio Profile', 'RRM Settings\n(in apconfig)', 'Radio_Profile\n(/v1/ngc/profiles)', 'POST /api/v1/ngc/profiles', 'Separate object in NGC'],
-            ['Device', 'Onboarded AP\n(automatic)', 'Device\n(/v1/devices)', 'POST /api/v1/devices', 'Explicit site and profile assignment'],
-            ['Site', 'N/A', 'Site\n(/v1/sites)', 'POST /api/v1/sites', 'New concept: site variables'],
-            ['User Role', 'Role ID\n(in Service)', 'PoliciesAndRoles\n(/v1/ngc/roles)', 'POST /api/v1/ngc/roles', 'Full firewall rules, RADIUS attribute mapping'],
+            ['SSID Profile', 'Service (/v1/services)', 'Network (/v1/ngc/networks)', 'POST /api/v1/ngc/networks', 'NGC adds band selection, identity pools'],
+            ['VLAN', 'Topology (/v1/topologies)', 'vlan_assignment (in Network)', 'Network.vlan_assignment', 'Can use site variable: {vlan_guest}'],
+            ['RADIUS Server', 'AAA Policy (/v1/aaapolicy)', 'Server (/v1/ngc/servers)', 'POST /api/v1/ngc/servers', 'Global object, reusable across sites'],
+            ['Device Profile', 'AP Config (/v1/apconfig)', 'AP_Profile (/v1/ngc/profiles)', 'POST /api/v1/ngc/profiles', 'Template-based, with inheritance'],
+            ['Radio Profile', 'RRM Settings (in apconfig)', 'Radio_Profile (/v1/ngc/profiles)', 'POST /api/v1/ngc/profiles', 'Separate object in NGC'],
+            ['Device', 'Onboarded AP (automatic)', 'Device (/v1/devices)', 'POST /api/v1/devices', 'Explicit site and profile assignment'],
+            ['Site', 'N/A', 'Site (/v1/sites)', 'POST /api/v1/sites', 'New concept: site variables'],
+            ['User Role', 'Role ID (in Service)', 'PoliciesAndRoles (/v1/ngc/roles)', 'POST /api/v1/ngc/roles', 'Full firewall rules, RADIUS attribute mapping'],
         ]
 
-        mapping_table = Table(mapping_data, colWidths=[1*inch, 1.3*inch, 1.3*inch, 1.5*inch, 1.4*inch])
+        # Wrap text in cells
+        mapping_data = []
+        for row in mapping_data_raw:
+            mapping_data.append([self._wrap_text(cell, 'TableCell') for cell in row])
+
+        mapping_table = Table(mapping_data, colWidths=[1*inch, 1.2*inch, 1.2*inch, 1.5*inch, 1.6*inch])
         mapping_table.setStyle(TableStyle([
             ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#6200EE')),
             ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
