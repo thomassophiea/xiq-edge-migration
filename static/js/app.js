@@ -860,3 +860,45 @@ function applyTheme(theme) {
         html.setAttribute('data-theme', theme);
     }
 }
+
+// PDF Report Download
+function downloadPDFReport() {
+    // Show loading state
+    const button = event.target.closest('button');
+    const originalText = button.innerHTML;
+    button.disabled = true;
+    button.innerHTML = '<span>Generating PDF Report...</span>';
+
+    // Download PDF
+    fetch('/api/download_report')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Failed to generate report');
+            }
+            return response.blob();
+        })
+        .then(blob => {
+            // Create download link
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `XIQ_Migration_Report_${new Date().toISOString().slice(0,10)}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+
+            // Restore button
+            button.disabled = false;
+            button.innerHTML = originalText;
+
+            // Show success message
+            alert('PDF report downloaded successfully!');
+        })
+        .catch(error => {
+            console.error('Error downloading PDF:', error);
+            button.disabled = false;
+            button.innerHTML = originalText;
+            alert('Error generating PDF report: ' + error.message);
+        });
+}

@@ -10,7 +10,7 @@ import json
 import threading
 from datetime import datetime
 from functools import wraps
-from flask import Flask, render_template, request, jsonify, session, redirect, url_for
+from flask import Flask, render_template, request, jsonify, session, redirect, url_for, send_file
 from flask_cors import CORS
 
 # Add src to path
@@ -19,6 +19,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
 from xiq_api_client import XIQAPIClient
 from campus_controller_client import CampusControllerClient
 from config_converter import ConfigConverter
+from pdf_report_generator import MigrationReportGenerator
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', os.urandom(24))
@@ -197,6 +198,39 @@ def connect_xiq():
 
     except Exception as e:
         log_message(f'Error connecting to XIQ: {str(e)}', 'error')
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/download_report', methods=['GET'])
+@login_required
+def download_report():
+    """Generate and download PDF migration assessment report"""
+    try:
+        # Check if XIQ data exists
+        if not migration_state.get('xiq_data'):
+            return jsonify({'success': False, 'error': 'No XIQ data available. Please connect to XIQ first.'}), 400
+
+        log_message('Generating PDF migration report...')
+
+        # Generate PDF report
+        generator = MigrationReportGenerator()
+        pdf_buffer = generator.generate_report(migration_state['xiq_data'])
+
+        log_message('PDF report generated successfully')
+
+        # Generate filename with timestamp
+        filename = f"XIQ_Migration_Report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+
+        # Send file
+        return send_file(
+            pdf_buffer,
+            mimetype='application/pdf',
+            as_attachment=True,
+            download_name=filename
+        )
+
+    except Exception as e:
+        log_message(f'Error generating PDF report: {str(e)}', 'error')
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
