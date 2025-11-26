@@ -9,6 +9,8 @@ import json
 from typing import Dict, Any, List, Optional
 from urllib.parse import urljoin
 import warnings
+import time
+from datetime import datetime, timedelta
 
 # Import configuration constants
 try:
@@ -52,6 +54,8 @@ class CampusControllerClient:
         self.session = requests.Session()
         self.session.verify = verify_ssl
         self.access_token = None
+        self.token_expiry = None
+        self.token_expires_in = None
 
         # Authenticate on initialization
         self._authenticate()
@@ -78,6 +82,10 @@ class CampusControllerClient:
                 data = response.json()
                 self.access_token = data.get('access_token')
                 token_type = data.get('token_type', 'Bearer')
+                self.token_expires_in = data.get('expires_in', 7200)  # Default 2 hours
+
+                # Calculate token expiry time (with 5 minute buffer for safety)
+                self.token_expiry = datetime.now() + timedelta(seconds=self.token_expires_in - 300)
 
                 self.session.headers.update({
                     'Authorization': f'{token_type} {self.access_token}',
@@ -87,12 +95,82 @@ class CampusControllerClient:
 
                 if self.verbose:
                     print("  Authentication successful")
-                    print(f"  Token expires in: {data.get('expires_in')} seconds")
+                    print(f"  Token expires in: {self.token_expires_in} seconds")
+                    print(f"  Token valid until: {self.token_expiry.strftime('%Y-%m-%d %H:%M:%S')}")
             else:
                 raise Exception(f"Authentication failed: {response.status_code} - {response.text}")
 
         except requests.exceptions.RequestException as e:
             raise Exception(f"Failed to connect to Edge Services: {str(e)}")
+
+    def _check_token_expiry(self):
+        """Check if token is expired or about to expire, re-authenticate if needed"""
+        if self.token_expiry and datetime.now() >= self.token_expiry:
+            if self.verbose:
+                print("  Token expired, re-authenticating...")
+            self._authenticate()
+
+    def _make_request_with_retry(self, method: str, url: str, max_retries: int = 3, **kwargs) -> requests.Response:
+        """
+        Make HTTP request with automatic retry on failure and token refresh on 401
+
+        Args:
+            method: HTTP method (GET, POST, PUT, DELETE)
+            url: Request URL
+            max_retries: Maximum number of retries (default: 3)
+            **kwargs: Additional arguments for requests
+
+        Returns:
+            Response object
+
+        Raises:
+            Exception: If all retries fail
+        """
+        # Check token expiry before making request
+        self._check_token_expiry()
+
+        # Set default timeout if not provided
+        if 'timeout' not in kwargs:
+            kwargs['timeout'] = DEFAULT_API_TIMEOUT
+
+        last_exception = None
+
+        for attempt in range(max_retries):
+            try:
+                response = self.session.request(method, url, **kwargs)
+
+                # Handle 401 Unauthorized - token expired
+                if response.status_code == 401:
+                    if self.verbose:
+                        print(f"  Received 401 Unauthorized, re-authenticating... (attempt {attempt + 1}/{max_retries})")
+                    self._authenticate()
+                    # Retry with new token
+                    response = self.session.request(method, url, **kwargs)
+
+                return response
+
+            except requests.exceptions.Timeout as e:
+                last_exception = e
+                if self.verbose:
+                    print(f"  Request timeout (attempt {attempt + 1}/{max_retries})")
+                if attempt < max_retries - 1:
+                    time.sleep(2 ** attempt)  # Exponential backoff
+
+            except requests.exceptions.ConnectionError as e:
+                last_exception = e
+                if self.verbose:
+                    print(f"  Connection error (attempt {attempt + 1}/{max_retries})")
+                if attempt < max_retries - 1:
+                    time.sleep(2 ** attempt)  # Exponential backoff
+
+            except requests.exceptions.RequestException as e:
+                last_exception = e
+                if self.verbose:
+                    print(f"  Request failed: {str(e)} (attempt {attempt + 1}/{max_retries})")
+                if attempt < max_retries - 1:
+                    time.sleep(2 ** attempt)  # Exponential backoff
+
+        raise Exception(f"Request failed after {max_retries} attempts: {str(last_exception)}")
 
     def post_configuration(self, config: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -153,7 +231,7 @@ class CampusControllerClient:
         """Get existing topologies from Edge Services to avoid conflicts"""
         url = f'{self.base_url}/v1/topologies'
         try:
-            response = self.session.get(url, timeout=30)
+            response = self._make_request_with_retry('GET', url)
             if response.status_code == 200:
                 topologies = response.json()
                 return topologies if isinstance(topologies, list) else []
@@ -180,7 +258,7 @@ class CampusControllerClient:
                 if self.verbose:
                     print(f"  Posting Rate Limiter '{limiter.get('name')}' ({limiter.get('cirKbps')} Kbps)...")
 
-                response = self.session.post(url, json=limiter, timeout=30)
+                response = self._make_request_with_retry('POST', url, json=limiter)
 
                 if response.status_code in [200, 201]:
                     success_count += 1
@@ -215,7 +293,7 @@ class CampusControllerClient:
                 if self.verbose:
                     print(f"  Posting CoS Policy '{policy.get('name')}'...")
 
-                response = self.session.post(url, json=policy, timeout=30)
+                response = self._make_request_with_retry('POST', url, json=policy)
 
                 if response.status_code in [200, 201]:
                     success_count += 1
@@ -249,7 +327,7 @@ class CampusControllerClient:
         # Get existing topologies to avoid conflicts
         existing_vlans = set()
         try:
-            response = self.session.get(url, timeout=30)
+            response = self._make_request_with_retry('GET', url)
             if response.status_code == 200:
                 existing_topos = response.json()
                 if isinstance(existing_topos, list):
@@ -271,7 +349,7 @@ class CampusControllerClient:
                     skipped_count += 1
                     continue
 
-                response = self.session.post(url, json=topology, timeout=30)
+                response = self._make_request_with_retry('POST', url, json=topology)
 
                 if response.status_code in [200, 201]:
                     success_count += 1
@@ -309,7 +387,7 @@ class CampusControllerClient:
                 if self.verbose:
                     print(f"  Posting Service (SSID) '{service.get('serviceName')}' (SSID: {service.get('ssid')}...)...")
 
-                response = self.session.post(url, json=service, timeout=30)
+                response = self._make_request_with_retry('POST', url, json=service)
 
                 if response.status_code in [200, 201]:
                     success_count += 1
@@ -344,7 +422,7 @@ class CampusControllerClient:
                 if self.verbose:
                     print(f"  Posting AAA Policy '{policy.get('policyName', 'Unknown')}'...")
 
-                response = self.session.post(url, json=policy, timeout=30)
+                response = self._make_request_with_retry('POST', url, json=policy)
 
                 if response.status_code in [200, 201]:
                     success_count += 1
@@ -396,7 +474,7 @@ class CampusControllerClient:
                     'location': location
                 }
 
-                response = self.session.put(url, json=update_payload, timeout=30)
+                response = self._make_request_with_retry('PUT', url, json=update_payload)
 
                 if response.status_code in [200, 204]:
                     success_count += 1
@@ -425,7 +503,7 @@ class CampusControllerClient:
         """
         try:
             url = f'{self.base_url}/v1/services'
-            response = self.session.get(url, timeout=30)
+            response = self._make_request_with_retry('GET', url)
 
             if response.status_code == 200:
                 return response.json()
@@ -466,7 +544,7 @@ class CampusControllerClient:
         """
         try:
             url = f'{self.base_url}/v3/profiles'
-            response = self.session.get(url, timeout=30)
+            response = self._make_request_with_retry('GET', url)
 
             if response.status_code == 200:
                 profiles = response.json()
@@ -499,7 +577,7 @@ class CampusControllerClient:
         try:
             # First, get the current profile to merge with existing assignments
             url = f'{self.base_url}/v3/profiles/{profile_id}'
-            response = self.session.get(url, timeout=30)
+            response = self._make_request_with_retry('GET', url)
 
             if response.status_code != 200:
                 if self.verbose:
@@ -521,7 +599,7 @@ class CampusControllerClient:
             # Update the profile
             profile['radioIfList'] = existing_radios
 
-            response = self.session.put(url, json=profile, timeout=30)
+            response = self._make_request_with_retry('PUT', url, json=profile)
 
             if response.status_code in [200, 204]:
                 if self.verbose:

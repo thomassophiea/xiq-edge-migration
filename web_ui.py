@@ -445,13 +445,17 @@ def migrate():
         log_message('Authenticated with Edge Services')
 
         with state_lock:
-            campus_config = migration_state['converted_config']
+            campus_config = migration_state['converted_config'].copy()
 
         # Update SSID status based on user preference
+        services_to_post = campus_config.get('services', [])
         if ssid_status == 'enabled':
-            log_message('SSIDs will be ENABLED and broadcasting after migration')
-            for service in campus_config.get('services', []):
+            log_message(f'SSIDs will be ENABLED and broadcasting after migration ({len(services_to_post)} services)')
+            enabled_count = 0
+            for service in services_to_post:
                 service['status'] = 'enabled'
+                enabled_count += 1
+            log_message(f'Set {enabled_count} services to enabled status')
         else:
             log_message('SSIDs will be imported as DISABLED for manual review')
             # Services are already disabled by default in config_converter

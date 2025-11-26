@@ -345,28 +345,18 @@ class ConfigConverter:
 
             pmf_mode = security.get('pmf', 'optional')
 
-            # Map PMF mode (Protected Management Frames)
+            # Map PMF mode
             pmf_mapping = {
                 'disabled': 'disabled',
                 'optional': 'enabled',  # In Edge Services, 'enabled' means optional
                 'required': 'required'
             }
 
-            # Validate PSK length (8-63 characters for ASCII passphrase, or 64 hex chars)
-            if len(psk) < 8:
-                if self.verbose:
-                    print(f"  Warning: PSK too short (min 8 chars), padding to minimum length")
-                psk = psk.ljust(8, '0')
-            elif len(psk) > 63 and len(psk) != 64:
-                if self.verbose:
-                    print(f"  Warning: PSK too long (max 63 chars), truncating...")
-                psk = psk[:63]
-
             privacy = {
                 "WpaPskElement": {
-                    "mode": "auto",  # WPA2/WPA3 auto (supports both WPA2 and WPA3)
+                    "mode": "auto",  # WPA2/WPA3 auto
                     "pmfMode": pmf_mapping.get(pmf_mode, 'enabled'),
-                    "keyHexEncoded": False,  # ASCII passphrase (not hex)
+                    "keyHexEncoded": False,
                     "presharedKey": psk
                 }
             }
