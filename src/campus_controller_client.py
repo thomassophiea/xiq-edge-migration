@@ -10,6 +10,15 @@ from typing import Dict, Any, List, Optional
 from urllib.parse import urljoin
 import warnings
 
+# Import configuration constants
+try:
+    from .config import EDGE_SERVICES_DEFAULT_PORT, EDGE_SERVICES_BASE_PATH, DEFAULT_API_TIMEOUT
+except ImportError:
+    # Fallback if config.py doesn't exist
+    EDGE_SERVICES_DEFAULT_PORT = 5825
+    EDGE_SERVICES_BASE_PATH = '/management'
+    DEFAULT_API_TIMEOUT = 30
+
 # Suppress SSL warnings for self-signed certificates (common in enterprise environments)
 warnings.filterwarnings('ignore', message='Unverified HTTPS request')
 
@@ -29,12 +38,13 @@ class CampusControllerClient:
             verbose: Enable verbose logging
         """
         # Ensure port is included
-        if ':5825' not in base_url and not base_url.startswith('http://localhost'):
+        port_str = f':{EDGE_SERVICES_DEFAULT_PORT}'
+        if port_str not in base_url and not base_url.startswith('http://localhost'):
             base_url = base_url.replace('https://', 'https://').replace('http://', 'http://')
             if ':' not in base_url.split('//')[-1]:
-                base_url = base_url + ':5825'
+                base_url = base_url + port_str
 
-        self.base_url = base_url.rstrip('/') + '/management'
+        self.base_url = base_url.rstrip('/') + EDGE_SERVICES_BASE_PATH
         self.username = username
         self.password = password
         self.verify_ssl = verify_ssl
@@ -405,29 +415,6 @@ class CampusControllerClient:
         if skipped_count > 0:
             result += f" ({skipped_count} skipped - no serial number)"
         return result
-
-    def get_existing_topologies(self) -> List[Dict[str, Any]]:
-        """
-        Get existing topologies from Edge Services
-
-        Returns:
-            List of existing topology configurations
-        """
-        try:
-            url = f'{self.base_url}/v1/topologies'
-            response = self.session.get(url, timeout=30)
-
-            if response.status_code == 200:
-                return response.json()
-            else:
-                if self.verbose:
-                    print(f"Failed to retrieve topologies: {response.status_code}")
-                return []
-
-        except Exception as e:
-            if self.verbose:
-                print(f"Error retrieving topologies: {str(e)}")
-            return []
 
     def get_existing_services(self) -> List[Dict[str, Any]]:
         """

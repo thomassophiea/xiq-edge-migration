@@ -10,6 +10,7 @@ import json
 import threading
 from datetime import datetime
 from functools import wraps
+from collections import deque
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for, send_file
 from flask_cors import CORS
 
@@ -22,7 +23,16 @@ from config_converter import ConfigConverter
 from pdf_report_generator import MigrationReportGenerator
 
 app = Flask(__name__)
-app.secret_key = os.environ.get('SECRET_KEY', os.urandom(24))
+
+# Require SECRET_KEY in production
+if os.environ.get('FLASK_ENV') == 'production':
+    if not os.environ.get('SECRET_KEY'):
+        raise Exception("SECRET_KEY environment variable is required in production")
+    app.secret_key = os.environ.get('SECRET_KEY')
+else:
+    # Development: use a consistent key or generate one
+    app.secret_key = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
+
 app.config['SESSION_COOKIE_SECURE'] = os.environ.get('FLASK_ENV') == 'production'
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
@@ -36,33 +46,40 @@ REGION_URLS = {
     'California': 'https://api-ca.extremecloudiq.com'
 }
 
-# Store migration state
+# Store migration state with thread safety
 migration_state = {
     'status': 'idle',  # idle, running, completed, error
     'progress': 0,
     'current_step': '',
-    'logs': [],
+    'logs': deque(maxlen=1000),  # Circular buffer with max 1000 logs
     'results': {},
     'xiq_data': {},
     'converted_config': {},
-    'profiles': []
+    'profiles': [],
+    'sorted_profiles_cache': None,  # Cache for sorted profiles
+    'sorted_profiles_cache_time': None  # Cache timestamp
 }
+
+# Thread lock for state access
+state_lock = threading.Lock()
 
 
 def log_message(message, level='info'):
-    """Add a log message to the migration state"""
+    """Add a log message to the migration state (thread-safe)"""
     timestamp = datetime.now().strftime('%H:%M:%S')
-    migration_state['logs'].append({
-        'timestamp': timestamp,
-        'level': level,
-        'message': message
-    })
+    with state_lock:
+        migration_state['logs'].append({
+            'timestamp': timestamp,
+            'level': level,
+            'message': message
+        })
 
 
 def update_progress(step, progress):
-    """Update migration progress"""
-    migration_state['current_step'] = step
-    migration_state['progress'] = progress
+    """Update migration progress (thread-safe)"""
+    with state_lock:
+        migration_state['current_step'] = step
+        migration_state['progress'] = progress
 
 
 def login_required(f):
@@ -261,14 +278,17 @@ def connect_edge():
         log_message('Fetching Associated Profiles...')
         profiles = controller_client.get_profiles()
 
-        # Sort profiles (custom first, then defaults)
+        # Sort profiles (custom first, then defaults) and cache
         custom_profiles = [p for p in profiles if '/default' not in p.get('name', '').lower()]
         default_profiles = [p for p in profiles if '/default' in p.get('name', '').lower()]
         custom_profiles.sort(key=lambda p: p.get('name', ''))
         default_profiles.sort(key=lambda p: p.get('name', ''))
         sorted_profiles = custom_profiles + default_profiles
 
-        migration_state['profiles'] = sorted_profiles
+        with state_lock:
+            migration_state['profiles'] = sorted_profiles
+            migration_state['sorted_profiles_cache'] = sorted_profiles
+            migration_state['sorted_profiles_cache_time'] = datetime.now()
 
         log_message(f'Retrieved {len(sorted_profiles)} Associated Profiles')
 
@@ -305,20 +325,13 @@ def convert_config():
         log_message('Converting configuration...')
         update_progress('Converting configuration', 60)
 
-        xiq_data = migration_state['xiq_data']
-
-        # DEBUG: Log what we received
-        print(f'DEBUG: Received selected_ssids: {selected_ssids}')
-        print(f'DEBUG: Total SSIDs in xiq_data: {len(xiq_data["ssids"])}')
+        with state_lock:
+            xiq_data = migration_state['xiq_data']
 
         # Filter selected objects
         ssids = [s for s in xiq_data['ssids'] if s.get('id') in selected_ssids]
         vlans = [v for v in xiq_data['vlans'] if v.get('id') in selected_vlans]
         radius = [r for r in xiq_data.get('authentication', []) if r.get('id') in selected_radius]
-
-        # DEBUG: Log filtered results
-        print(f'DEBUG: Filtered to {len(ssids)} SSIDs')
-        print(f'DEBUG: SSID names: {[s.get("name", s.get("ssid_name")) for s in ssids]}')
 
         # Build filtered xiq_config structure
         filtered_config = {
@@ -335,11 +348,8 @@ def convert_config():
         converter = ConfigConverter()
         campus_config = converter.convert(filtered_config)
 
-        # DEBUG: Log conversion results
-        print(f'DEBUG: Conversion created {len(campus_config.get("services", []))} services')
-        print(f'DEBUG: Service names: {[s.get("serviceName") for s in campus_config.get("services", [])]}')
-
-        migration_state['converted_config'] = campus_config
+        with state_lock:
+            migration_state['converted_config'] = campus_config
 
         # Build summary
         summary = {
@@ -499,18 +509,18 @@ def get_status():
 @app.route('/api/reset', methods=['POST'])
 @login_required
 def reset():
-    """Reset migration state"""
-    global migration_state
-    migration_state = {
-        'status': 'idle',
-        'progress': 0,
-        'current_step': '',
-        'logs': [],
-        'results': {},
-        'xiq_data': {},
-        'converted_config': {},
-        'profiles': []
-    }
+    """Reset migration state (thread-safe)"""
+    with state_lock:
+        migration_state['status'] = 'idle'
+        migration_state['progress'] = 0
+        migration_state['current_step'] = ''
+        migration_state['logs'].clear()
+        migration_state['results'] = {}
+        migration_state['xiq_data'] = {}
+        migration_state['converted_config'] = {}
+        migration_state['profiles'] = []
+        migration_state['sorted_profiles_cache'] = None
+        migration_state['sorted_profiles_cache_time'] = None
     return jsonify({'success': True})
 
 

@@ -5,8 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>XIQ to Edge Services Migration Tool</title>
     <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
     <script>
-        // Initialize theme immediately to prevent flash
+        // Initialize theme immediately to prevent flash (moved to body for better performance)
         (function() {
             const savedTheme = localStorage.getItem('theme') || 'dark';
             const html = document.documentElement;
@@ -19,7 +21,6 @@
             }
         })();
     </script>
-</head>
 <body>
     <div class="container">
         <header>
@@ -254,6 +255,6 @@
         </section>
     </div>
 
-    <script src="/static/js/app.js"></script>
+    <script src="/static/js/app.js" defer></script>
 </body>
 </html>

@@ -7,6 +7,13 @@ Based on Edge Services ServiceElement and TopologyElement schemas
 from typing import Dict, List, Any, Optional
 import uuid
 
+# Import configuration constants
+try:
+    from .config import DEFAULT_AUTHENTICATED_ROLE_ID
+except ImportError:
+    # Fallback if config.py doesn't exist
+    DEFAULT_AUTHENTICATED_ROLE_ID = "4459ee6c-2f76-11e7-93ae-92361f002671"
+
 
 class ConfigConverter:
     """Converts XIQ configuration to Edge Services format"""
@@ -209,9 +216,8 @@ class ConfigConverter:
             # Determine if captive portal is enabled
             enable_captive_portal = ssid.get('captive_portal') is not None
 
-            # Use a standard authenticated role ID (from existing Edge Services config)
-            # This is a default role ID that exists in Edge Services
-            default_auth_role_id = "4459ee6c-2f76-11e7-93ae-92361f002671"
+            # Use a standard authenticated role ID (from configuration)
+            default_auth_role_id = DEFAULT_AUTHENTICATED_ROLE_ID
 
             service = {
                 "id": service_id,

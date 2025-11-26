@@ -10,13 +10,31 @@ let state = {
     convertedServices: []  // Store converted services for profile assignment
 };
 
+// Cache DOM elements for better performance
+const elements = {};
+
 // Initialize app
 document.addEventListener('DOMContentLoaded', () => {
+    cacheDOMElements();
     initializeTheme();
     setupEventListeners();
     setupTabs();
     startLogPolling();
 });
+
+// Cache frequently accessed DOM elements
+function cacheDOMElements() {
+    elements.progressSection = document.getElementById('progressSection');
+    elements.progressBar = document.getElementById('progressBar');
+    elements.progressText = document.getElementById('progressText');
+    elements.logsPanel = document.getElementById('logsPanel');
+    elements.xiqResults = document.getElementById('xiqResults');
+    elements.step2 = document.getElementById('step2');
+    elements.step3 = document.getElementById('step3');
+    elements.step4 = document.getElementById('step4');
+    elements.step5 = document.getElementById('step5');
+    elements.step6 = document.getElementById('step6');
+}
 
 // Setup event listeners
 function setupEventListeners() {
@@ -88,7 +106,7 @@ async function connectToXIQ() {
             document.getElementById('xiqDeviceCount').textContent = result.data.devices.length;
 
             // Show results
-            document.getElementById('xiqResults').style.display = 'block';
+            (elements.xiqResults || document.getElementById('xiqResults')).style.display = 'block';
             updateStepStatus('step1', 'Completed');
             updateProgress('XIQ connection successful', 50);
 
@@ -96,7 +114,7 @@ async function connectToXIQ() {
             populateSelectionLists(result.data);
 
             // Show step 2
-            document.getElementById('step2').style.display = 'block';
+            (elements.step2 || document.getElementById('step2')).style.display = 'block';
             updateStepStatus('step2', 'Ready');
         } else {
             alert('Error: ' + result.error);
@@ -250,9 +268,9 @@ function proceedToEdge() {
     }
 
     updateStepStatus('step2', 'Completed');
-    document.getElementById('step3').style.display = 'block';
+    (elements.step3 || document.getElementById('step3')).style.display = 'block';
     updateStepStatus('step3', 'Ready');
-    document.getElementById('step3').scrollIntoView({ behavior: 'smooth' });
+    (elements.step3 || document.getElementById('step3')).scrollIntoView({ behavior: 'smooth' });
 }
 
 // Connect to Edge Services
@@ -354,9 +372,9 @@ async function convertConfiguration() {
             // Show profile assignment step
             buildProfileAssignmentUI(result.data.services, state.edgeData.profiles);
 
-            document.getElementById('step4').style.display = 'block';
+            (elements.step4 || document.getElementById('step4')).style.display = 'block';
             updateStepStatus('step4', 'Ready');
-            document.getElementById('step4').scrollIntoView({ behavior: 'smooth' });
+            (elements.step4 || document.getElementById('step4')).scrollIntoView({ behavior: 'smooth' });
         } else {
             alert('Conversion error: ' + result.error);
         }
@@ -520,9 +538,9 @@ function proceedToMigration() {
 
     displayMigrationSummary(summary);
 
-    document.getElementById('step5').style.display = 'block';
+    (elements.step5 || document.getElementById('step5')).style.display = 'block';
     updateStepStatus('step5', 'Ready');
-    document.getElementById('step5').scrollIntoView({ behavior: 'smooth' });
+    (elements.step5 || document.getElementById('step5')).scrollIntoView({ behavior: 'smooth' });
 }
 
 // Display migration summary
@@ -581,9 +599,9 @@ async function executeMigration() {
             // Show results
             displayMigrationResults(result.data, dryRun);
 
-            document.getElementById('step6').style.display = 'block';
+            (elements.step6 || document.getElementById('step6')).style.display = 'block';
             updateStepStatus('step6', 'Completed');
-            document.getElementById('step6').scrollIntoView({ behavior: 'smooth' });
+            (elements.step6 || document.getElementById('step6')).scrollIntoView({ behavior: 'smooth' });
         } else {
             alert('Migration error: ' + result.error);
             updateStepStatus('step5', 'Error');
@@ -675,11 +693,11 @@ function displayMigrationResults(data, dryRun) {
     }
 }
 
-// Update progress
+// Update progress - use cached elements
 function updateProgress(message, percent) {
-    const progressBar = document.getElementById('progressBar');
-    const progressText = document.getElementById('progressText');
-    const progressSection = document.getElementById('progressSection');
+    const progressBar = elements.progressBar || document.getElementById('progressBar');
+    const progressText = elements.progressText || document.getElementById('progressText');
+    const progressSection = elements.progressSection || document.getElementById('progressSection');
 
     progressSection.style.display = 'block';
     progressBar.style.width = percent + '%';
@@ -748,7 +766,7 @@ async function resetMigration() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-// Poll for logs
+// Poll for logs - reduced frequency for better performance
 function startLogPolling() {
     setInterval(async () => {
         try {
@@ -761,34 +779,47 @@ function startLogPolling() {
         } catch (error) {
             // Silently fail - don't spam console
         }
-    }, 1000);
+    }, 3000);  // Reduced from 1000ms to 3000ms (3 seconds)
 }
 
-// Update logs
+// Update logs - optimized to only append new entries
+let lastLogCount = 0;
+
 function updateLogs(logs) {
-    const logsPanel = document.getElementById('logsPanel');
-    logsPanel.innerHTML = '';
+    const logsPanel = elements.logsPanel || document.getElementById('logsPanel');
 
-    logs.forEach(log => {
-        const entry = document.createElement('div');
-        entry.className = 'log-entry';
+    // Only append new log entries instead of rebuilding entire list
+    const newLogs = logs.slice(lastLogCount);
 
-        entry.innerHTML = `
-            <span class="log-timestamp">${log.timestamp}</span>
-            <span class="log-level ${log.level}">[${log.level.toUpperCase()}]</span>
-            <span class="log-message">${log.message}</span>
-        `;
+    if (newLogs.length > 0) {
+        const fragment = document.createDocumentFragment();
 
-        logsPanel.appendChild(entry);
-    });
+        newLogs.forEach(log => {
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
 
-    // Auto-scroll to bottom
-    logsPanel.scrollTop = logsPanel.scrollHeight;
+            entry.innerHTML = `
+                <span class="log-timestamp">${log.timestamp}</span>
+                <span class="log-level ${log.level}">[${log.level.toUpperCase()}]</span>
+                <span class="log-message">${log.message}</span>
+            `;
+
+            fragment.appendChild(entry);
+        });
+
+        logsPanel.appendChild(fragment);
+        lastLogCount = logs.length;
+
+        // Auto-scroll to bottom
+        logsPanel.scrollTop = logsPanel.scrollHeight;
+    }
 }
 
 // Clear logs
 function clearLogs() {
-    document.getElementById('logsPanel').innerHTML = '';
+    const logsPanel = elements.logsPanel || document.getElementById('logsPanel');
+    logsPanel.innerHTML = '';
+    lastLogCount = 0;  // Reset the log count
 }
 
 // Toggle logs visibility

@@ -9,6 +9,14 @@ import json
 from typing import Dict, List, Any, Optional
 import warnings
 
+# Import configuration constants
+try:
+    from .config import MAX_PAGINATION_PAGES, DEFAULT_API_TIMEOUT
+except ImportError:
+    # Fallback if config.py doesn't exist
+    MAX_PAGINATION_PAGES = 100
+    DEFAULT_API_TIMEOUT = 30
+
 warnings.filterwarnings('ignore', message='Unverified HTTPS request')
 
 
@@ -160,7 +168,7 @@ class XIQAPIClient:
         all_items = []
         page = 1
 
-        while True:
+        while page <= MAX_PAGINATION_PAGES:
             params = {"page": page, "limit": 100}
             result = self._make_request(endpoint, params=params)
 
@@ -192,8 +200,11 @@ class XIQAPIClient:
 
             page += 1
 
+        if page > MAX_PAGINATION_PAGES and self.verbose:
+            print(f"    WARNING: Reached maximum page limit ({MAX_PAGINATION_PAGES}), may not have retrieved all items")
+
         if self.verbose and all_items:
-            print(f"    DEBUG: Retrieved {len(all_items)} total items")
+            print(f"    Retrieved {len(all_items)} total items from {page - 1} pages")
 
         return all_items
 
