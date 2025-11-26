@@ -578,6 +578,9 @@ async function executeMigration() {
     const ssidStatusRadio = document.querySelector('input[name="ssidStatus"]:checked');
     const ssidStatus = ssidStatusRadio ? ssidStatusRadio.value : 'disabled';
 
+    // Get PDF download preference
+    const downloadPdf = document.getElementById('downloadPdfSummary').checked;
+
     if (!dryRun && !confirm('This will migrate the selected configuration to Edge Services. Are you sure?')) {
         return;
     }
@@ -611,6 +614,13 @@ async function executeMigration() {
             (elements.step6 || document.getElementById('step6')).style.display = 'block';
             updateStepStatus('step6', 'Completed');
             (elements.step6 || document.getElementById('step6')).scrollIntoView({ behavior: 'smooth' });
+
+            // Auto-download PDF summary if requested
+            if (downloadPdf && !dryRun) {
+                setTimeout(() => {
+                    downloadPDFReport();
+                }, 1000); // Small delay to let the UI update
+            }
         } else {
             alert('Migration error: ' + result.error);
             updateStepStatus('step5', 'Error');
