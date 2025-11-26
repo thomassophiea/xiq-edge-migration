@@ -56,6 +56,21 @@ class XIQAPIClient:
         if verbose:
             print("  Authenticating to ExtremeCloud IQ...")
 
+        # Validate inputs
+        if not username or not isinstance(username, str):
+            raise Exception("Username is required and must be a string")
+
+        if not password or not isinstance(password, str):
+            raise Exception("Password is required and must be a string")
+
+        # Clean inputs (strip whitespace)
+        username = username.strip()
+        password = password.strip()
+
+        # Basic email format validation
+        if '@' not in username or '.' not in username.split('@')[1]:
+            raise Exception("Username must be a valid email address (e.g., user@example.com)")
+
         login_url = f"{base_url}/login"
 
         payload = {
@@ -64,33 +79,53 @@ class XIQAPIClient:
         }
 
         try:
-            response = requests.post(login_url, json=payload, verify=verify_ssl)
+            response = requests.post(
+                login_url,
+                json=payload,
+                verify=verify_ssl,
+                headers={'Content-Type': 'application/json'},
+                timeout=30
+            )
 
+            # Handle various error responses
             if response.status_code == 401:
                 try:
                     error_data = response.json()
                     error_msg = error_data.get('error_message', 'Invalid credentials')
                     raise Exception(f"Authentication failed: {error_msg}")
-                except:
+                except ValueError:
                     raise Exception("Authentication failed: Invalid username or password")
 
-            response.raise_for_status()
+            if response.status_code >= 400:
+                try:
+                    error_data = response.json()
+                    error_msg = error_data.get('error_message', error_data.get('message', response.text))
+                    raise Exception(f"XIQ API Error: {error_msg}")
+                except ValueError:
+                    raise Exception(f"XIQ API Error (HTTP {response.status_code}): {response.text[:200]}")
 
-            data = response.json()
+            # Parse successful response
+            try:
+                data = response.json()
+            except ValueError:
+                raise Exception(f"Invalid JSON response from XIQ API: {response.text[:200]}")
+
             access_token = data.get("access_token")
 
             if not access_token:
-                raise Exception("No access token received from login")
+                raise Exception(f"No access token in response. Received: {list(data.keys())}")
 
             if verbose:
                 print("  ✓ Authentication successful")
 
             return cls(access_token, base_url, verify_ssl, verbose)
 
-        except requests.exceptions.RequestException as e:
-            if "Authentication failed:" not in str(e):
-                raise Exception(f"Authentication failed: {e}")
-            raise
+        except Exception as e:
+            # Re-raise our custom exceptions as-is
+            if "Authentication failed:" in str(e) or "XIQ API Error:" in str(e) or "Invalid JSON" in str(e):
+                raise
+            # Wrap unexpected exceptions
+            raise Exception(f"Connection error: {str(e)}")
 
     def _make_request(self, endpoint: str, method: str = "GET", params: dict = None) -> Optional[Dict]:
         """Make an API request with error handling"""
