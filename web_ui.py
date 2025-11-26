@@ -197,8 +197,9 @@ def connect_xiq():
         vlans = xiq_config.get('vlans', [])
         radius_servers = xiq_config.get('authentication', [])
 
-        # Store in session
-        migration_state['xiq_data'] = xiq_config
+        # Store in session (thread-safe)
+        with state_lock:
+            migration_state['xiq_data'] = xiq_config
 
         log_message(f'Retrieved {len(ssids)} SSIDs, {len(vlans)} VLANs, {len(radius_servers)} RADIUS servers, {len(devices)} devices')
         update_progress('XIQ data retrieved', 50)
@@ -223,15 +224,18 @@ def connect_xiq():
 def download_report():
     """Generate and download PDF migration assessment report"""
     try:
-        # Check if XIQ data exists
-        if not migration_state.get('xiq_data'):
+        # Check if XIQ data exists (thread-safe)
+        with state_lock:
+            xiq_data = migration_state.get('xiq_data')
+
+        if not xiq_data:
             return jsonify({'success': False, 'error': 'No XIQ data available. Please connect to XIQ first.'}), 400
 
         log_message('Generating PDF migration report...')
 
         # Generate PDF report
         generator = MigrationReportGenerator()
-        pdf_buffer = generator.generate_report(migration_state['xiq_data'])
+        pdf_buffer = generator.generate_report(xiq_data)
 
         log_message('PDF report generated successfully')
 
@@ -399,19 +403,26 @@ def migrate():
 
         log_message('Starting migration...')
         update_progress('Migrating to Edge Services', 75)
-        migration_state['status'] = 'running'
+
+        with state_lock:
+            migration_state['status'] = 'running'
 
         if dry_run:
             log_message('DRY RUN MODE - No changes will be made', 'warning')
 
             # Save to JSON file
+            with state_lock:
+                converted_config = migration_state['converted_config']
+
             output_file = '/tmp/migration_dry_run.json'
             with open(output_file, 'w') as f:
-                json.dump(migration_state['converted_config'], f, indent=2)
+                json.dump(converted_config, f, indent=2)
 
             log_message(f'Configuration saved to {output_file}')
             update_progress('Dry run complete', 100)
-            migration_state['status'] = 'completed'
+
+            with state_lock:
+                migration_state['status'] = 'completed'
 
             return jsonify({
                 'success': True,
@@ -432,7 +443,8 @@ def migrate():
         # If we get here, authentication succeeded (otherwise exception was thrown)
         log_message('Authenticated with Edge Services')
 
-        campus_config = migration_state['converted_config']
+        with state_lock:
+            campus_config = migration_state['converted_config']
 
         # Post configuration using unified method
         log_message('Posting configuration to Edge Services...')
@@ -472,10 +484,11 @@ def migrate():
             log_message(f'Applied {assignment_count} profile assignments')
             results['profile_assignments'] = assignment_count
 
-        migration_state['results'] = results
-        update_progress('Migration complete', 100)
-        migration_state['status'] = 'completed'
+        with state_lock:
+            migration_state['results'] = results
+            migration_state['status'] = 'completed'
 
+        update_progress('Migration complete', 100)
         log_message('Migration completed successfully!', 'success')
 
         return jsonify({
@@ -487,7 +500,8 @@ def migrate():
 
     except Exception as e:
         log_message(f'Error during migration: {str(e)}', 'error')
-        migration_state['status'] = 'error'
+        with state_lock:
+            migration_state['status'] = 'error'
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
@@ -495,13 +509,18 @@ def migrate():
 @login_required
 def get_status():
     """Get current migration status"""
+    with state_lock:
+        # Convert deque to list for JSON serialization and get last 50 entries
+        logs_list = list(migration_state['logs'])
+        recent_logs = logs_list[-50:] if len(logs_list) > 50 else logs_list
+
     return jsonify({
         'success': True,
         'data': {
             'status': migration_state['status'],
             'progress': migration_state['progress'],
             'current_step': migration_state['current_step'],
-            'logs': migration_state['logs'][-50:]  # Last 50 log entries
+            'logs': recent_logs
         }
     })
 
