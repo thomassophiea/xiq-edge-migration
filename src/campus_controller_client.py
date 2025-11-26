@@ -614,3 +614,59 @@ class CampusControllerClient:
             if self.verbose:
                 print(f"    Error updating profile: {str(e)}")
             return False
+
+    def enable_all_services(self) -> int:
+        """
+        Enable all services (SSIDs) that are currently disabled
+        This ensures SSIDs start broadcasting
+
+        Returns:
+            Number of services successfully enabled
+        """
+        try:
+            # First, get all services
+            url = f'{self.base_url}/v1/services'
+            response = self._make_request_with_retry('GET', url)
+
+            if response.status_code != 200:
+                if self.verbose:
+                    print(f"  Failed to get services: {response.status_code}")
+                return 0
+
+            services = response.json()
+            if not isinstance(services, list):
+                return 0
+
+            enabled_count = 0
+
+            # Enable each disabled service
+            for service in services:
+                service_id = service.get('id')
+                service_name = service.get('serviceName', 'Unknown')
+                current_status = service.get('status', 'disabled')
+
+                if current_status == 'disabled':
+                    if self.verbose:
+                        print(f"  Enabling service '{service_name}'...")
+
+                    # Update service status to enabled
+                    service['status'] = 'enabled'
+
+                    # PUT the updated service
+                    update_url = f'{url}/{service_id}'
+                    update_response = self._make_request_with_retry('PUT', update_url, json=service)
+
+                    if update_response.status_code in [200, 204]:
+                        enabled_count += 1
+                        if self.verbose:
+                            print(f"    ✓ Enabled '{service_name}'")
+                    else:
+                        if self.verbose:
+                            print(f"    ✗ Failed to enable '{service_name}': {update_response.status_code}")
+
+            return enabled_count
+
+        except Exception as e:
+            if self.verbose:
+                print(f"  Error enabling services: {str(e)}")
+            return 0

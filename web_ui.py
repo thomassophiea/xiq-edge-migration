@@ -467,6 +467,13 @@ def migrate():
         # Extract results
         results = result.get('details', {})
 
+        # If user wants SSIDs enabled, explicitly enable them after creation
+        if ssid_status == 'enabled' and results.get('services_created', 0) > 0:
+            log_message('Enabling SSIDs via PATCH requests to ensure they broadcast...')
+            enable_count = controller_client.enable_all_services()
+            log_message(f'Successfully enabled {enable_count} SSIDs')
+            results['ssids_enabled'] = enable_count
+
         update_progress('Applying profile assignments', 90)
 
         # Apply profile assignments
