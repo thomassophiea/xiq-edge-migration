@@ -563,12 +563,20 @@ function displayMigrationSummary(summary) {
             <span class="label">Profile Assignments</span>
             <span class="value">${summary.assignments}</span>
         </div>
+        <div class="summary-item" style="padding-top: 10px; margin-top: 10px; border-top: 1px solid var(--border-color); grid-column: 1 / -1;">
+            <span class="label" style="font-weight: 600; color: var(--primary-color);">Note:</span>
+            <span class="value" style="font-size: 0.9em; color: var(--text-medium);">Configure SSID broadcast settings below before executing migration</span>
+        </div>
     `;
 }
 
 // Execute migration
 async function executeMigration() {
     const dryRun = document.getElementById('dryRun').checked;
+
+    // Get SSID status preference
+    const ssidStatusRadio = document.querySelector('input[name="ssidStatus"]:checked');
+    const ssidStatus = ssidStatusRadio ? ssidStatusRadio.value : 'disabled';
 
     if (!dryRun && !confirm('This will migrate the selected configuration to Edge Services. Are you sure?')) {
         return;
@@ -586,7 +594,8 @@ async function executeMigration() {
                 username: state.edgeCredentials.username,
                 password: state.edgeCredentials.password,
                 dry_run: dryRun,
-                profile_assignments: state.profileAssignments
+                profile_assignments: state.profileAssignments,
+                ssid_status: ssidStatus  // Add SSID status preference
             })
         });
 

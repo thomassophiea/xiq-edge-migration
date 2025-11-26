@@ -400,6 +400,7 @@ def migrate():
         password = data.get('password')
         dry_run = data.get('dry_run', False)
         profile_assignments = data.get('profile_assignments', {})
+        ssid_status = data.get('ssid_status', 'disabled')  # Get SSID status preference
 
         log_message('Starting migration...')
         update_progress('Migrating to Edge Services', 75)
@@ -446,6 +447,15 @@ def migrate():
         with state_lock:
             campus_config = migration_state['converted_config']
 
+        # Update SSID status based on user preference
+        if ssid_status == 'enabled':
+            log_message('SSIDs will be ENABLED and broadcasting after migration')
+            for service in campus_config.get('services', []):
+                service['status'] = 'enabled'
+        else:
+            log_message('SSIDs will be imported as DISABLED for manual review')
+            # Services are already disabled by default in config_converter
+
         # Post configuration using unified method
         log_message('Posting configuration to Edge Services...')
         result = controller_client.post_configuration(campus_config)
@@ -489,7 +499,12 @@ def migrate():
             migration_state['status'] = 'completed'
 
         update_progress('Migration complete', 100)
-        log_message('Migration completed successfully!', 'success')
+
+        # Log completion message based on SSID status
+        if ssid_status == 'enabled':
+            log_message('Migration completed successfully! SSIDs are now ENABLED and broadcasting.', 'success')
+        else:
+            log_message('Migration completed successfully! SSIDs are DISABLED. Enable them manually in Edge Services when ready.', 'success')
 
         return jsonify({
             'success': True,

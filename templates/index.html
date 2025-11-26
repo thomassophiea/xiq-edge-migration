@@ -219,6 +219,21 @@
                         <input type="checkbox" id="dryRun">
                         Dry Run (no changes will be made)
                     </label>
+
+                    <div style="margin-top: 20px; padding: 15px; background: var(--bg-surface-4dp); border-radius: 8px; border-left: 4px solid var(--primary-color);">
+                        <h4 style="margin: 0 0 10px 0; color: var(--text-high); font-size: 14px;">SSID Broadcast Settings</h4>
+                        <p style="margin: 0 0 15px 0; color: var(--text-medium); font-size: 13px;">
+                            Choose whether migrated SSIDs should start broadcasting immediately or remain disabled for manual review.
+                        </p>
+                        <label class="checkbox-label" style="display: block; margin-bottom: 8px;">
+                            <input type="radio" name="ssidStatus" id="ssidDisabled" value="disabled" checked>
+                            <strong>Import as Disabled</strong> (Recommended) - SSIDs will be created but not broadcasting. You can review and enable them manually in Edge Services.
+                        </label>
+                        <label class="checkbox-label" style="display: block;">
+                            <input type="radio" name="ssidStatus" id="ssidEnabled" value="enabled">
+                            <strong>Start Broadcasting Immediately</strong> - SSIDs will be enabled and broadcasting as soon as migration completes.
+                        </label>
+                    </div>
                 </div>
 
                 <div class="migration-actions">

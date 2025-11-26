@@ -223,7 +223,7 @@ class ConfigConverter:
                 "id": service_id,
                 "serviceName": ssid_name,
                 "ssid": ssid_name,  # Use same name for SSID
-                "status": "disabled",  # Set to disabled so admin can enable after review
+                "status": "disabled",  # Start disabled for safety (can be changed in web_ui.py based on user preference)
                 "suppressSsid": not ssid.get('broadcast_ssid', True),
                 "privacy": privacy,
                 "proxied": "Local",
