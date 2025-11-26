@@ -285,7 +285,7 @@ class CampusControllerClient:
         Returns:
             Result summary string
         """
-        url = f'{self.base_url}/v1/policyClassOfService'
+        url = f'{self.base_url}/v1/cos'
         success_count = 0
 
         for policy in cos_policies:
