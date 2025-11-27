@@ -16,6 +16,7 @@ IMPROVEMENTS:
 
 from typing import Dict, List, Any, Optional
 import uuid
+import re
 
 # Import configuration constants
 try:
@@ -23,6 +24,61 @@ try:
 except ImportError:
     # Fallback if config.py doesn't exist
     DEFAULT_AUTHENTICATED_ROLE_ID = "4459ee6c-2f76-11e7-93ae-92361f002671"
+
+
+# Validation helper functions
+def validate_ip_address(ip: str) -> bool:
+    """Validate IPv4 address format"""
+    if not ip or not isinstance(ip, str):
+        return False
+    parts = ip.split('.')
+    if len(parts) != 4:
+        return False
+    try:
+        return all(0 <= int(part) <= 255 for part in parts)
+    except (ValueError, TypeError):
+        return False
+
+
+def validate_name(name: str, min_len: int = 1, max_len: int = 255) -> bool:
+    """
+    Validate name field according to API spec
+    Valid characters: Alphanumeric, special characters except semicolon, colon, ampersand
+    """
+    if not name or not isinstance(name, str):
+        return False
+    if len(name) < min_len or len(name) > max_len:
+        return False
+    # Check for invalid characters (semicolon, colon, ampersand)
+    invalid_chars = [';', ':', '&']
+    return not any(char in name for char in invalid_chars)
+
+
+def validate_port(port: Any, default: int = 1812) -> int:
+    """Validate port number (1-65535)"""
+    try:
+        port_int = int(port) if port is not None else default
+        return port_int if 1 <= port_int <= 65535 else default
+    except (ValueError, TypeError):
+        return default
+
+
+def validate_timeout(timeout: Any, min_val: int = 1, max_val: int = 360, default: int = 5) -> int:
+    """Validate timeout value"""
+    try:
+        timeout_int = int(timeout) if timeout is not None else default
+        return timeout_int if min_val <= timeout_int <= max_val else default
+    except (ValueError, TypeError):
+        return default
+
+
+def validate_retries(retries: Any, min_val: int = 1, max_val: int = 32, default: int = 3) -> int:
+    """Validate retry count"""
+    try:
+        retries_int = int(retries) if retries is not None else default
+        return retries_int if min_val <= retries_int <= max_val else default
+    except (ValueError, TypeError):
+        return default
 
 
 class ConfigConverter:
@@ -116,6 +172,13 @@ class ConfigConverter:
             topology_id = str(uuid.uuid4())
             self.topology_id_map[vlan_id] = topology_id
 
+            # Get and validate topology name
+            topo_name = vlan.get('name', f"VLAN_{vlan_id}")
+            if not validate_name(topo_name, min_len=1, max_len=255):
+                if self.verbose:
+                    print(f"  WARNING: Invalid topology name '{topo_name}', using default")
+                topo_name = f"VLAN_{vlan_id}"
+
             # Parse subnet if present
             ip_address = "0.0.0.0"
             cidr = 0
@@ -127,25 +190,37 @@ class ConfigConverter:
                 try:
                     parts = subnet.split('/')
                     ip_address = parts[0]
-                    cidr = int(parts[1])
 
-                    # Validate CIDR range (0-32 for IPv4)
-                    if cidr < 0 or cidr > 32:
-                        print(f"  WARNING: Invalid CIDR {cidr} for VLAN {vlan_id}, using 0")
-                        cidr = 0
+                    # Validate IP address format
+                    if not validate_ip_address(ip_address):
+                        print(f"  WARNING: Invalid IP address '{ip_address}' for VLAN {vlan_id}")
+                        ip_address = "0.0.0.0"
                         l3_presence = False
                     else:
-                        l3_presence = True
+                        cidr = int(parts[1])
+
+                        # Validate CIDR range (0-32 for IPv4)
+                        if cidr < 0 or cidr > 32:
+                            print(f"  WARNING: Invalid CIDR {cidr} for VLAN {vlan_id}, using 0")
+                            cidr = 0
+                            l3_presence = False
+                        else:
+                            l3_presence = True
                 except (ValueError, IndexError):
                     print(f"  WARNING: Invalid subnet format '{subnet}' for VLAN {vlan_id}")
                     cidr = 0
                     l3_presence = False
 
+            # Validate gateway IP if present
             if vlan.get('gateway'):
                 gateway = vlan.get('gateway')
-                # If gateway is present, ensure L3 presence is True
                 if gateway != "0.0.0.0":
-                    l3_presence = True
+                    if not validate_ip_address(gateway):
+                        if self.verbose:
+                            print(f"  WARNING: Invalid gateway IP '{gateway}' for VLAN {vlan_id}, using 0.0.0.0")
+                        gateway = "0.0.0.0"
+                    else:
+                        l3_presence = True
 
             # Determine DHCP mode
             dhcp_mode = "DHCPNone"
@@ -187,8 +262,7 @@ class ConfigConverter:
 
             topology = {
                 "id": topology_id,
-                "name": vlan.get('name', f"VLAN_{vlan_id}"),
-                "description": vlan.get('description', ''),
+                "name": topo_name,
                 "vlanid": vlan_id,
                 "tagged": False,
                 "multicastFilters": [],
@@ -461,25 +535,36 @@ class ConfigConverter:
 
             radius_servers = []
             for idx, server in enumerate(auth_servers):
+                # Get and validate IP address
+                ip_addr = server.get('ip', server.get('address', '192.168.1.1'))
+                if not validate_ip_address(ip_addr):
+                    if self.verbose:
+                        print(f"  WARNING: Invalid RADIUS server IP '{ip_addr}', using default")
+                    ip_addr = '192.168.1.1'
+
+                # Validate port, timeout, and retries using helper functions
+                port = validate_port(server.get('acct_port', server.get('accounting_port')), default=1813)
+                timeout = validate_timeout(server.get('timeout'), default=5)
+                retries = validate_retries(server.get('retries'), default=3)
+
                 radius_server = {
                     "id": str(uuid.uuid4()),
-                    "serverName": server.get('name', f"RADIUS-{idx+1}"),
-                    "ipAddress": server.get('ip', server.get('address', '192.168.1.1')),
-                    "authenticationPort": server.get('auth_port', server.get('port', 1812)),
-                    "accountingPort": server.get('acct_port', server.get('accounting_port', 1813)),
+                    "ipAddress": ip_addr,
                     "sharedSecret": server.get('secret', server.get('shared_secret', 'secret')),
-                    "timeout": server.get('timeout', 5),
-                    "retries": server.get('retries', 3),
-                    "enabled": server.get('enabled', True)
+                    "port": port,
+                    "timeout": timeout,
+                    "totalRetries": retries,
+                    "pollInterval": 60
                 }
                 radius_servers.append(radius_server)
 
             aaa_policy = {
                 "id": policy_id,
-                "policyName": policy_name,
-                "radiusServers": radius_servers,
-                "authenticationProtocol": "PAP",
-                "accountingEnabled": False,
+                "name": policy_name,
+                "authenticationRadiusServers": radius_servers,
+                "accountingRadiusServers": [],
+                "authenticationType": "PAP",
+                "serverPoolingMode": "failover",
                 "features": ["CENTRALIZED-SITE"]
             }
 
