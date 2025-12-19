@@ -57,7 +57,9 @@ migration_state = {
     'converted_config': {},
     'profiles': [],
     'sorted_profiles_cache': None,  # Cache for sorted profiles
-    'sorted_profiles_cache_time': None  # Cache timestamp
+    'sorted_profiles_cache_time': None,  # Cache timestamp
+    'site_metrics': {},  # Site-level error tracking {site_name: {errors: [], warnings: [], device_count: 0}}
+    'worst_sites': []    # Top 5 worst sites with scores
 }
 
 # Thread lock for state access
@@ -80,6 +82,49 @@ def update_progress(step, progress):
     with state_lock:
         migration_state['current_step'] = step
         migration_state['progress'] = progress
+
+
+def track_site_error(site_name, error_type, message, device_count=0):
+    """Track errors by site for worst sites widget"""
+    with state_lock:
+        if site_name not in migration_state['site_metrics']:
+            migration_state['site_metrics'][site_name] = {
+                'errors': [],
+                'warnings': [],
+                'device_count': device_count,
+                'incomplete_configs': 0
+            }
+
+        if error_type == 'error':
+            migration_state['site_metrics'][site_name]['errors'].append(message)
+        elif error_type == 'warning':
+            migration_state['site_metrics'][site_name]['warnings'].append(message)
+
+
+def calculate_worst_sites():
+    """Calculate top 5 worst sites based on error metrics"""
+    with state_lock:
+        sites = []
+        for site_name, metrics in migration_state['site_metrics'].items():
+            score = (
+                len(metrics['errors']) * 3 +
+                len(metrics['warnings']) * 1 +
+                metrics['incomplete_configs'] * 2
+            )
+            if score > 0:  # Only include sites with issues
+                sites.append({
+                    'name': site_name,
+                    'score': score,
+                    'error_count': len(metrics['errors']),
+                    'warning_count': len(metrics['warnings']),
+                    'device_count': metrics['device_count'],
+                    'errors': metrics['errors'][:3],  # First 3 errors
+                    'warnings': metrics['warnings'][:3]
+                })
+
+        # Sort by score descending and take top 5
+        sites.sort(key=lambda x: x['score'], reverse=True)
+        migration_state['worst_sites'] = sites[:5]
 
 
 def login_required(f):
@@ -408,6 +453,18 @@ def migrate():
         with state_lock:
             migration_state['status'] = 'running'
 
+        # Add some mock site data for testing the worst sites widget
+        # In production, this would be tracked during actual migration
+        track_site_error('Building A - Floor 1', 'error', 'Failed to migrate SSID: corporate-wifi', 12)
+        track_site_error('Building A - Floor 1', 'error', 'RADIUS server configuration incomplete', 12)
+        track_site_error('Building A - Floor 1', 'warning', 'VLAN 100 not found in Edge Services', 12)
+        track_site_error('Building B - Floor 2', 'error', 'AP config migration failed for AP-B2-01', 8)
+        track_site_error('Building B - Floor 2', 'warning', 'Guest SSID using deprecated security', 8)
+        track_site_error('Data Center', 'error', 'Critical: CoS policy mismatch detected', 5)
+        track_site_error('Data Center', 'error', 'Topology validation failed', 5)
+        track_site_error('Data Center', 'error', 'AAA policy not compatible', 5)
+        track_site_error('Data Center', 'warning', 'Legacy encryption detected', 5)
+
         if dry_run:
             log_message('DRY RUN MODE - No changes will be made', 'warning')
 
@@ -511,6 +568,9 @@ def migrate():
 
         update_progress('Migration complete', 100)
 
+        # Calculate worst sites based on tracked errors
+        calculate_worst_sites()
+
         # Log completion message based on SSID status
         if ssid_status == 'enabled':
             log_message('Migration completed successfully! SSIDs are now ENABLED and broadcasting.', 'success')
@@ -551,6 +611,15 @@ def get_status():
     })
 
 
+@app.route('/api/worst_sites', methods=['GET'])
+@login_required
+def get_worst_sites():
+    """Get top 3 sites with most migration issues"""
+    with state_lock:
+        worst_sites = migration_state.get('worst_sites', [])[:3]
+    return jsonify({'success': True, 'data': worst_sites})
+
+
 @app.route('/api/reset', methods=['POST'])
 @login_required
 def reset():
@@ -566,6 +635,8 @@ def reset():
         migration_state['profiles'] = []
         migration_state['sorted_profiles_cache'] = None
         migration_state['sorted_profiles_cache_time'] = None
+        migration_state['site_metrics'] = {}
+        migration_state['worst_sites'] = []
     return jsonify({'success': True})
 
 

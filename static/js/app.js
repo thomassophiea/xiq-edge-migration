@@ -10,6 +10,137 @@ let state = {
     convertedServices: []  // Store converted services for profile assignment
 };
 
+// Widget Management System
+class WidgetManager {
+    constructor() {
+        this.widgets = new Map();
+        this.preferences = this.loadPreferences();
+        this.container = null;
+        this.sortable = null;
+    }
+
+    loadPreferences() {
+        const stored = localStorage.getItem('widgetPreferences');
+        if (stored) {
+            return JSON.parse(stored);
+        }
+        return this.getDefaultPreferences();
+    }
+
+    getDefaultPreferences() {
+        return {
+            order: [
+                'worst-sites',
+                'rate-limiters',
+                'cos-policies',
+                'topologies',
+                'aaa-policies',
+                'services',
+                'ap-configs',
+                'profile-assignments'
+            ],
+            visibility: {
+                'worst-sites': true,
+                'rate-limiters': true,
+                'cos-policies': true,
+                'topologies': true,
+                'aaa-policies': true,
+                'services': true,
+                'ap-configs': true,
+                'profile-assignments': true
+            },
+            sizes: {
+                'worst-sites': 'large',
+                'rate-limiters': 'medium',
+                'cos-policies': 'medium',
+                'topologies': 'medium',
+                'aaa-policies': 'medium',
+                'services': 'medium',
+                'ap-configs': 'medium',
+                'profile-assignments': 'medium'
+            }
+        };
+    }
+
+    savePreferences() {
+        localStorage.setItem('widgetPreferences', JSON.stringify(this.preferences));
+    }
+
+    registerWidget(id, element) {
+        this.widgets.set(id, element);
+    }
+
+    toggleVisibility(widgetId) {
+        this.preferences.visibility[widgetId] = !this.preferences.visibility[widgetId];
+        this.savePreferences();
+        this.applyPreferences();
+    }
+
+    setSize(widgetId, size) {
+        this.preferences.sizes[widgetId] = size;
+        this.savePreferences();
+        this.applyPreferences();
+    }
+
+    applyPreferences() {
+        // Apply visibility
+        this.widgets.forEach((element, id) => {
+            element.style.display = this.preferences.visibility[id] ? 'flex' : 'none';
+
+            // Remove old size classes
+            element.classList.remove('size-small', 'size-medium', 'size-large');
+
+            // Add new size class
+            const size = this.preferences.sizes[id] || 'medium';
+            element.classList.add(`size-${size}`);
+        });
+
+        // Apply order
+        if (this.container) {
+            this.preferences.order.forEach((id, index) => {
+                const element = this.widgets.get(id);
+                if (element) {
+                    element.style.order = index;
+                }
+            });
+        }
+    }
+
+    initializeSortable(container) {
+        this.container = container;
+
+        // Initialize SortableJS
+        this.sortable = Sortable.create(container, {
+            animation: 150,
+            handle: '.widget-drag-handle',
+            ghostClass: 'sortable-ghost',
+            dragClass: 'sortable-drag',
+            onEnd: (evt) => {
+                // Update order preference
+                const newOrder = [];
+                const children = Array.from(container.children);
+                children.forEach(child => {
+                    const widgetId = child.getAttribute('data-widget-id');
+                    if (widgetId) {
+                        newOrder.push(widgetId);
+                    }
+                });
+                this.preferences.order = newOrder;
+                this.savePreferences();
+            }
+        });
+    }
+
+    reset() {
+        this.preferences = this.getDefaultPreferences();
+        this.savePreferences();
+        this.applyPreferences();
+    }
+}
+
+// Initialize widget manager
+const widgetManager = new WidgetManager();
+
 // Cache DOM elements for better performance
 const elements = {};
 
@@ -631,8 +762,8 @@ async function executeMigration() {
     }
 }
 
-// Display migration results
-function displayMigrationResults(data, dryRun) {
+// Display migration results with widget system
+async function displayMigrationResults(data, dryRun) {
     const container = document.getElementById('migrationResults');
 
     if (dryRun) {
@@ -643,73 +774,192 @@ function displayMigrationResults(data, dryRun) {
                 <p>No changes were made to Edge Services.</p>
             </div>
         `;
-    } else {
-        // Helper function to format result - handles both string and object format
-        const formatResult = (result) => {
-            if (typeof result === 'string') {
-                // Extract "X/Y" from strings like "5/10 posted successfully"
-                const match = result.match(/(\d+\/\d+)/);
-                return match ? match[1] : result;
-            } else if (result && typeof result === 'object') {
-                return `${result.posted || result.updated || 0}/${result.total || 0}`;
-            }
-            return '0/0';
-        };
-
-        let html = '<div class="results"><h3>Migration Successful!</h3><div class="results-grid">';
-
-        if (data.results.rate_limiters) {
-            html += `<div class="result-item">
-                <span class="result-label">Rate Limiters</span>
-                <span class="result-value">${formatResult(data.results.rate_limiters)}</span>
-            </div>`;
-        }
-
-        if (data.results.cos_policies) {
-            html += `<div class="result-item">
-                <span class="result-label">CoS Policies</span>
-                <span class="result-value">${formatResult(data.results.cos_policies)}</span>
-            </div>`;
-        }
-
-        if (data.results.topologies) {
-            html += `<div class="result-item">
-                <span class="result-label">Topologies</span>
-                <span class="result-value">${formatResult(data.results.topologies)}</span>
-            </div>`;
-        }
-
-        if (data.results.aaa_policies) {
-            html += `<div class="result-item">
-                <span class="result-label">AAA Policies</span>
-                <span class="result-value">${formatResult(data.results.aaa_policies)}</span>
-            </div>`;
-        }
-
-        if (data.results.services) {
-            html += `<div class="result-item">
-                <span class="result-label">Services</span>
-                <span class="result-value">${formatResult(data.results.services)}</span>
-            </div>`;
-        }
-
-        if (data.results.ap_configs) {
-            html += `<div class="result-item">
-                <span class="result-label">AP Configs</span>
-                <span class="result-value">${formatResult(data.results.ap_configs)}</span>
-            </div>`;
-        }
-
-        if (data.results.profile_assignments) {
-            html += `<div class="result-item">
-                <span class="result-label">Profile Assignments</span>
-                <span class="result-value">${data.results.profile_assignments}</span>
-            </div>`;
-        }
-
-        html += '</div></div>';
-        container.innerHTML = html;
+        return;
     }
+
+    // Create widget controls header
+    const controlsHtml = `
+        <div class="widget-controls">
+            <button class="btn btn-sm" onclick="showWidgetSettings()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <path d="M12 1v6m0 6v6m8.66-15L17 7.66M7 17l-3.66 3.66M23 12h-6m-6 0H1m15.66 8.66L17 17M7 7 3.34 3.34"></path>
+                </svg>
+                Customize Widgets
+            </button>
+            <button class="btn btn-sm" onclick="widgetManager.reset()">Reset Layout</button>
+        </div>
+    `;
+
+    // Fetch worst sites data
+    let worstSitesData = [];
+    try {
+        const response = await fetch('/api/worst_sites');
+        const result = await response.json();
+        if (result.success) {
+            worstSitesData = result.data;
+        }
+    } catch (error) {
+        console.error('Failed to fetch worst sites:', error);
+    }
+
+    // Create results container with grid
+    let html = controlsHtml + '<div class="results"><h3>Migration Successful!</h3><div class="results-grid" id="widgetGrid">';
+
+    // Add worst sites widget
+    if (worstSitesData.length > 0) {
+        html += createWorstSitesWidget(worstSitesData);
+    }
+
+    // Add existing widgets
+    html += createMigrationWidget('rate-limiters', 'Rate Limiters', data.results.rate_limiters);
+    html += createMigrationWidget('cos-policies', 'CoS Policies', data.results.cos_policies);
+    html += createMigrationWidget('topologies', 'Topologies', data.results.topologies);
+    html += createMigrationWidget('aaa-policies', 'AAA Policies', data.results.aaa_policies);
+    html += createMigrationWidget('services', 'Services', data.results.services);
+    html += createMigrationWidget('ap-configs', 'AP Configs', data.results.ap_configs);
+    html += createMigrationWidget('profile-assignments', 'Profile Assignments', data.results.profile_assignments);
+
+    html += '</div></div>';
+    container.innerHTML = html;
+
+    // Register all widgets
+    const widgetGrid = document.getElementById('widgetGrid');
+    document.querySelectorAll('[data-widget-id]').forEach(element => {
+        const widgetId = element.getAttribute('data-widget-id');
+        widgetManager.registerWidget(widgetId, element);
+    });
+
+    // Initialize sortable and apply preferences
+    widgetManager.initializeSortable(widgetGrid);
+    widgetManager.applyPreferences();
+}
+
+// Create worst sites widget
+function createWorstSitesWidget(sites) {
+    const sitesHtml = sites.map((site, index) => `
+        <div class="site-issue-item">
+            <div class="site-rank">#${index + 1}</div>
+            <div class="site-info">
+                <div class="site-name">${site.name || 'Unknown Site'}</div>
+                <div class="site-stats">
+                    <span class="stat-badge stat-errors">${site.error_count} errors</span>
+                    <span class="stat-badge stat-warnings">${site.warning_count} warnings</span>
+                    <span class="stat-badge">${site.device_count} devices</span>
+                </div>
+                ${site.errors && site.errors.length > 0 ? `
+                <div class="site-errors-preview">
+                    ${site.errors.map(err => `<div class="error-preview">• ${err}</div>`).join('')}
+                </div>
+                ` : ''}
+            </div>
+            <div class="site-score" style="background: ${getScoreColor(site.score)}">
+                ${site.score}
+            </div>
+        </div>
+    `).join('');
+
+    return `
+        <div class="result-item widget-worst-sites" data-widget-id="worst-sites">
+            <div class="widget-header">
+                <span class="widget-drag-handle" title="Drag to reorder">⋮⋮</span>
+                <span class="result-label">Worst Sites</span>
+                <div class="widget-actions">
+                    <button class="widget-action-btn" onclick="cycleWidgetSize('worst-sites')" title="Resize">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l-7-7"></path>
+                        </svg>
+                    </button>
+                    <button class="widget-action-btn" onclick="widgetManager.toggleVisibility('worst-sites')" title="Hide">×</button>
+                </div>
+            </div>
+            <div class="widget-content">
+                ${sitesHtml}
+            </div>
+        </div>
+    `;
+}
+
+// Create standard migration widget
+function createMigrationWidget(id, label, result) {
+    if (!result) return '';
+
+    const formatResult = (result) => {
+        if (typeof result === 'string') {
+            const match = result.match(/(\d+\/\d+)/);
+            return match ? match[1] : result;
+        } else if (result && typeof result === 'object') {
+            return `${result.posted || result.updated || 0}/${result.total || 0}`;
+        }
+        return '0/0';
+    };
+
+    return `
+        <div class="result-item" data-widget-id="${id}">
+            <div class="widget-header">
+                <span class="widget-drag-handle" title="Drag to reorder">⋮⋮</span>
+                <span class="result-label">${label}</span>
+                <div class="widget-actions">
+                    <button class="widget-action-btn" onclick="cycleWidgetSize('${id}')" title="Resize">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l-7-7"></path>
+                        </svg>
+                    </button>
+                    <button class="widget-action-btn" onclick="widgetManager.toggleVisibility('${id}')" title="Hide">×</button>
+                </div>
+            </div>
+            <span class="result-value">${formatResult(result)}</span>
+        </div>
+    `;
+}
+
+// Helper: Get color based on score
+function getScoreColor(score) {
+    if (score >= 20) return '#f44336'; // Red for critical
+    if (score >= 10) return '#ff9800'; // Orange for high
+    if (score >= 5) return '#ffc107';  // Amber for medium
+    return '#4caf50'; // Green for low
+}
+
+// Helper: Cycle through widget sizes
+function cycleWidgetSize(widgetId) {
+    const sizes = ['small', 'medium', 'large'];
+    const currentSize = widgetManager.preferences.sizes[widgetId] || 'medium';
+    const currentIndex = sizes.indexOf(currentSize);
+    const nextSize = sizes[(currentIndex + 1) % sizes.length];
+    widgetManager.setSize(widgetId, nextSize);
+}
+
+// Show widget settings modal
+function showWidgetSettings() {
+    // Create modal dynamically
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay';
+    modal.innerHTML = `
+        <div class="modal-content widget-settings-modal">
+            <div class="modal-header">
+                <h3>Widget Settings</h3>
+                <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">×</button>
+            </div>
+            <div class="modal-body">
+                <h4>Visibility</h4>
+                <div class="widget-visibility-list">
+                    ${Object.entries(widgetManager.preferences.visibility).map(([id, visible]) => `
+                        <label class="widget-toggle">
+                            <input type="checkbox" ${visible ? 'checked' : ''}
+                                   onchange="widgetManager.preferences.visibility['${id}'] = this.checked; widgetManager.savePreferences(); widgetManager.applyPreferences();">
+                            <span>${id.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</span>
+                        </label>
+                    `).join('')}
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="widgetManager.reset(); this.closest('.modal-overlay').remove();">Reset to Defaults</button>
+                <button class="btn btn-primary" onclick="this.closest('.modal-overlay').remove();">Done</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
 }
 
 // Update progress - use cached elements
